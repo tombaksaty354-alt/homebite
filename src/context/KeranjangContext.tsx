@@ -42,13 +42,13 @@ export function KeranjangProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const hapusDariKeranjang = (produkId: number) => {
+  const hapusDariKeranjang = (produkId: string) => {
     setKeranjang((keranjangSebelumnya) =>
       keranjangSebelumnya.filter((item) => item.id !== produkId)
     );
   };
 
-  const updateJumlah = (produkId: number, jumlah: number) => {
+  const updateJumlah = (produkId: string, jumlah: number) => {
     if (jumlah <= 0) {
       hapusDariKeranjang(produkId);
       return;
