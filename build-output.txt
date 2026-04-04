@@ -1,0 +1,23 @@
+
+> test-website@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+Failed to compile.
+
+./src/app/admin/chat/page.tsx:104:8
+Type error: Property 'from' does not exist on type 'never'.
+
+[0m [90m 102 |[39m     [90m// Get all messages[39m[0m
+[0m [90m 103 |[39m     [36mconst[39m { data } [33m=[39m [36mawait[39m supabaseAdmin[0m
+[0m[31m[1m>[22m[39m[90m 104 |[39m       [33m.[39m[36mfrom[39m([32m"chat_messages"[39m)[0m
+[0m [90m     |[39m        [31m[1m^[22m[39m[0m
+[0m [90m 105 |[39m       [33m.[39mselect([32m"*"[39m)[0m
+[0m [90m 106 |[39m       [33m.[39morder([32m"created_at"[39m[33m,[39m { ascending[33m:[39m [36mfalse[39m })[33m;[39m[0m
+[0m [90m 107 |[39m[0m
+Next.js build worker exited with code: 1 and signal: null

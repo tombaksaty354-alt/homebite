@@ -1,0 +1,188 @@
+/* Global Styles - Homebite - OPTIMIZED */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #fafafa;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Homebite Brand Colors */
+:root {
+  --homebite-primary: #e67e22;
+  --homebite-primary-light: #f39c12;
+  --homebite-primary-dark: #d35400;
+  --homebite-secondary: #2c3e50;
+  --homebite-secondary-light: #34495e;
+  --homebite-success: #27ae60;
+  --homebite-warning: #f39c12;
+  --homebite-bg: #fafafa;
+  --homebite-card: #ffffff;
+  --homebite-text: #2c3e50;
+  --homebite-text-muted: #95a5a6;
+  --homebite-border: #e0e0e0;
+  --homebite-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --homebite-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --homebite-radius: 12px;
+  --homebite-radius-sm: 8px;
+}
+
+/* Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection Color */
+::selection {
+  background: var(--homebite-primary);
+  color: white;
+}
+
+/* Modern Card - LIGHTWEIGHT */
+.card-modern {
+  background: var(--homebite-card);
+  border-radius: var(--homebite-radius);
+  border: 1px solid var(--homebite-border);
+  box-shadow: var(--homebite-shadow);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  contain: layout style;
+}
+
+.card-modern:hover {
+  box-shadow: var(--homebite-shadow-hover);
+  transform: translateY(-4px);
+}
+
+/* Modern Button - LIGHTWEIGHT */
+.btn-modern {
+  padding: 10px 24px;
+  border-radius: var(--homebite-radius-sm);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-modern-primary {
+  background: linear-gradient(135deg, var(--homebite-primary) 0%, var(--homebite-primary-light) 100%);
+  color: white;
+}
+
+.btn-modern-primary:hover {
+  background: linear-gradient(135deg, var(--homebite-primary-dark) 0%, var(--homebite-primary) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(230, 126, 34, 0.3);
+}
+
+.btn-modern-outline {
+  background: transparent;
+  border: 2px solid var(--homebite-primary);
+  color: var(--homebite-primary);
+}
+
+.btn-modern-outline:hover {
+  background: var(--homebite-primary);
+  color: white;
+}
+
+/* Simple Fade In */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Simple Slide Up */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Stagger Animation Delays */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* Modern Input */
+.input-modern {
+  padding: 10px 16px;
+  border-radius: var(--homebite-radius-sm);
+  border: 2px solid var(--homebite-border);
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  background: white;
+}
+
+.input-modern:focus {
+  outline: none;
+  border-color: var(--homebite-primary);
+  box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--homebite-primary) 0%, var(--homebite-primary-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Skeleton Loading - OPTIMIZED */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 1.5s infinite linear;
+  contain: strict;
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+/* Badge Modern */
+.badge-modern {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Simple Transitions */
+.transition-all {
+  transition: all 0.2s ease;
+}

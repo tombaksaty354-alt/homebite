@@ -1,0 +1,41 @@
+{
+  "users": [
+    {
+      "nama": "poke",
+      "email": "poke@gmail.com",
+      "password": "$2b$10$ZBn5BgNvSPhAfNmKPOswxu9CYneQUt2N7Y9FxBO2iAi04INH/jQHC",
+      "role": "KONSUMEN",
+      "id": 1,
+      "tier": "Silver",
+      "createdAt": "2026-04-03T09:36:59.226Z"
+    }
+  ],
+  "produk": [],
+  "orders": [],
+  "lapKeuangan": [],
+  "reviews": [],
+  "wishlist": [],
+  "tierMitra": [
+    {
+      "id": 1,
+      "nama": "Silver",
+      "syaratTransaksi": 0,
+      "syaratRating": 0,
+      "komisi": 500
+    },
+    {
+      "id": 2,
+      "nama": "Gold",
+      "syaratTransaksi": 50,
+      "syaratRating": 4.5,
+      "komisi": 500
+    },
+    {
+      "id": 3,
+      "nama": "Platinum",
+      "syaratTransaksi": 200,
+      "syaratRating": 4.8,
+      "komisi": 500
+    }
+  ]
+}
