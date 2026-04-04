@@ -1,8 +1,5 @@
 {
-  "/admin/pengaturan/page": "app/admin/pengaturan/page.js",
-  "/profil/page": "app/profil/page.js",
   "/page": "app/page.js",
-  "/mitra/page": "app/mitra/page.js",
   "/produk/page": "app/produk/page.js",
   "/api/produk/route": "app/api/produk/route.js"
 }

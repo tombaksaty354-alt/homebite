@@ -161,7 +161,7 @@ export default function ChatBox({
           filter: `and(user_id.eq.${partnerId},conversation_partner_id.eq.${user?.id})`
         },
         (payload) => {
-          setPartnerTyping(payload.new.is_typing);
+          setPartnerTyping((payload.new as any).is_typing);
         }
       )
       .subscribe();
