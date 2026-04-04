@@ -101,7 +101,7 @@ export default function NotificationBell() {
         } else if (link.includes("/pesanan") || link.includes("/order")) {
           pesanan.push(notif);
           console.log('📦 Default to Pesanan (link):', notif.title);
-        } else if (String(tipe) === "success") {
+        } else if (notif.tipe === "success") {
           promo.push(notif);
           console.log('📢 Default to Promo (type):', notif.title);
         } else {
