@@ -103,6 +103,8 @@ export default function ChatBox({
 
   // Real-time subscription for messages
   useEffect(() => {
+    if (!user?.id || !partnerId) return;
+
     const channel = supabase!
       .channel('chat-box-messages-ultimate')
       .on(
@@ -113,11 +115,15 @@ export default function ChatBox({
           table: 'chat_messages',
           filter: orderId
             ? `order_id.eq.${orderId}`
-            : `and(sender_id.eq.${partnerId},receiver_id.eq.${user?.id}),and(sender_id.eq.${user?.id},receiver_id.eq.${partnerId})`
+            : `or(and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id}))`
         },
         (payload) => {
           const newMsg = payload.new as Message;
-          setMessages(prev => [...prev, newMsg]);
+          setMessages(prev => {
+            // Prevent duplicates
+            if (prev.some(m => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
 
           if (newMsg.receiver_id === user?.id && !newMsg.dibaca) {
             supabase!
@@ -227,73 +233,88 @@ export default function ChatBox({
   }
 
   async function fetchMessages() {
-    if (!supabase || !user || !partnerId) return;
-
-    let query = supabase
-      .from("chat_messages")
-      .select("*")
-      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`);
-
-    if (orderId) {
-      query = query.eq("order_id", orderId);
+    if (!supabase || !user || !partnerId) {
+      console.log('fetchMessages: Missing dependencies', { supabase: !!supabase, user: user?.id, partnerId });
+      return;
     }
 
-    if (chatType) {
-      query = query.eq("chat_type", chatType);
-    }
+    try {
+      let query = supabase
+        .from("chat_messages")
+        .select("*")
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`);
 
-    const { data } = await query
-      .order("created_at", { ascending: true })
-      .limit(200);
+      if (orderId) {
+        query = query.eq("order_id", orderId);
+      }
 
-    if (data) {
-      // Fetch reply messages
-      const replyIds = data.filter(m => m.reply_to_id).map(m => m.reply_to_id);
-      if (replyIds.length > 0) {
-        const { data: replyMessages } = await supabase
-          .from("chat_messages")
-          .select("id, pesan, sender_id, attachment_type, voice_duration")
-          .in("id", replyIds);
+      // Don't filter by chatType here as it might be too restrictive
+      // Only filter by orderId if provided
 
-        const { data: users } = await supabase
-          .from("users")
-          .select("id, nama")
-          .in("id", replyMessages?.map(m => m.sender_id) || []);
+      const { data, error } = await query
+        .order("created_at", { ascending: true })
+        .limit(200);
 
-        const replyMap: Record<string, ReplyMessage> = {};
-        replyMessages?.forEach(rm => {
-          const sender = users?.find(u => u.id === rm.sender_id);
-          replyMap[rm.id] = {
-            id: rm.id,
-            pesan: rm.pesan,
-            sender_name: sender?.nama || "Unknown",
-            attachment_type: rm.attachment_type,
-            voice_duration: rm.voice_duration
-          };
-        });
+      if (error) {
+        console.error("Error fetching messages:", error);
+        return;
+      }
 
-        const messagesWithReplies = data.map(m => ({
-          ...m,
-          replied_message_preview: m.reply_to_id ? replyMap[m.reply_to_id] : undefined
-        }));
+      if (data) {
+        console.log('Fetched messages:', data.length);
+        
+        // Fetch reply messages
+        const replyIds = data.filter(m => m.reply_to_id).map(m => m.reply_to_id);
+        if (replyIds.length > 0) {
+          const { data: replyMessages } = await supabase
+            .from("chat_messages")
+            .select("id, pesan, sender_id, attachment_type, voice_duration")
+            .in("id", replyIds);
 
-        setMessages(messagesWithReplies);
+          const { data: users } = await supabase
+            .from("users")
+            .select("id, nama")
+            .in("id", replyMessages?.map(m => m.sender_id) || []);
+
+          const replyMap: Record<string, ReplyMessage> = {};
+          replyMessages?.forEach(rm => {
+            const sender = users?.find(u => u.id === rm.sender_id);
+            replyMap[rm.id] = {
+              id: rm.id,
+              pesan: rm.pesan,
+              sender_name: sender?.nama || "Unknown",
+              attachment_type: rm.attachment_type,
+              voice_duration: rm.voice_duration
+            };
+          });
+
+          const messagesWithReplies = data.map(m => ({
+            ...m,
+            replied_message_preview: m.reply_to_id ? replyMap[m.reply_to_id] : undefined
+          }));
+
+          setMessages(messagesWithReplies);
+        } else {
+          setMessages(data);
+        }
+
+        // Mark unread messages as read
+        const unreadIds = data.filter(m => m.receiver_id === user?.id && !m.dibaca).map(m => m.id);
+        if (unreadIds.length > 0) {
+          await supabase
+            .from("chat_messages")
+            .update({ dibaca: true, read_at: new Date().toISOString() })
+            .in("id", unreadIds);
+        }
       } else {
-        setMessages(data);
+        setMessages([]);
       }
 
-      // Mark unread messages as read
-      const unreadIds = data.filter(m => m.receiver_id === user?.id && !m.dibaca).map(m => m.id);
-      if (unreadIds.length > 0) {
-        await supabase
-          .from("chat_messages")
-          .update({ dibaca: true, read_at: new Date().toISOString() })
-          .in("id", unreadIds);
-      }
+      await fetchReactions();
+      scrollToBottom();
+    } catch (error) {
+      console.error("Error in fetchMessages:", error);
     }
-
-    await fetchReactions();
-    scrollToBottom();
   }
 
   async function fetchReactions() {
@@ -335,11 +356,19 @@ export default function ChatBox({
   }
 
   async function sendMessage() {
-    if (!supabase || !user || !newMessage.trim() || !partnerId) return;
+    if (!supabase || !user || !newMessage.trim() || !partnerId) {
+      console.log('sendMessage: Missing dependencies', { 
+        supabase: !!supabase, 
+        user: user?.id, 
+        message: newMessage.trim(), 
+        partnerId 
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.from("chat_messages").insert({
+      const messageData = {
         sender_id: user.id,
         receiver_id: partnerId,
         order_id: orderId || null,
@@ -347,16 +376,26 @@ export default function ChatBox({
         pesan: newMessage,
         reply_to_id: replyToMessage?.id || null,
         dibaca: false,
-      });
+      };
 
-      if (!error) {
-        setNewMessage("");
-        setReplyToMessage(null);
-        updateTypingStatus(false);
-        fetchMessages();
+      console.log('Sending message:', messageData);
+
+      const { error } = await supabase.from("chat_messages").insert(messageData);
+
+      if (error) {
+        console.error("Error sending message:", error);
+        alert(`Gagal mengirim pesan: ${error.message}`);
+        return;
       }
+
+      console.log('Message sent successfully');
+      setNewMessage("");
+      setReplyToMessage(null);
+      updateTypingStatus(false);
+      fetchMessages();
     } catch (error) {
       console.error("Error sending message:", error);
+      alert("Terjadi kesalahan saat mengirim pesan");
     } finally {
       setIsLoading(false);
     }
