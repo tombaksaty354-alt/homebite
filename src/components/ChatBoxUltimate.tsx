@@ -580,7 +580,10 @@ export default function ChatBox({
   }
 
   async function uploadVoice(audioBlob: Blob) {
-    if (!supabase || !user) return;
+    if (!supabase || !user) {
+      console.error('uploadVoice: Missing supabase or user');
+      return;
+    }
 
     setIsUploading(true);
     try {
@@ -588,30 +591,55 @@ export default function ChatBox({
       const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
+      console.log('Uploading voice to:', filePath);
+
       const { error: uploadError, data } = await supabase.storage
         .from('voice-messages')
         .upload(filePath, audioBlob);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
 
+      console.log('Upload successful:', data);
+
+      // Get public URL
       const { data: urlData } = supabase.storage
         .from('voice-messages')
         .getPublicUrl(filePath);
 
+      console.log('Public URL:', urlData.publicUrl);
+
+      if (!urlData.publicUrl) {
+        throw new Error('Failed to get public URL');
+      }
+
       // Calculate duration (approximate from recording time)
       const duration = recordingTime;
 
-      await supabase.from("chat_messages").insert({
-        sender_id: user.id,
-        receiver_id: partnerId,
-        order_id: orderId || null,
-        chat_type: chatType || 'support',
-        pesan: "🎤 Voice Message",
-        voice_url: urlData.publicUrl,
-        voice_duration: duration,
-        dibaca: false,
-      });
+      console.log('Inserting message with voice_url:', urlData.publicUrl);
 
+      const { error: insertError, data: insertedData } = await supabase
+        .from("chat_messages")
+        .insert({
+          sender_id: user.id,
+          receiver_id: partnerId,
+          order_id: orderId || null,
+          chat_type: chatType || 'support',
+          pesan: "🎤 Voice Message",
+          voice_url: urlData.publicUrl,
+          voice_duration: duration,
+          dibaca: false,
+        })
+        .select();
+
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        throw insertError;
+      }
+
+      console.log('Voice message inserted:', insertedData);
       fetchMessages();
     } catch (error) {
       console.error("Error uploading voice:", error);
@@ -622,19 +650,44 @@ export default function ChatBox({
   }
 
   function playVoice(voiceUrl: string, messageId: string) {
+    console.log('Attempting to play voice:', voiceUrl);
+    
     if (isPlayingVoice === messageId) {
       audioPlayerRef.current?.pause();
       setIsPlayingVoice(null);
-    } else {
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.pause();
-      }
+      return;
+    }
+    
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+    }
+    
+    try {
       audioPlayerRef.current = new Audio(voiceUrl);
-      audioPlayerRef.current.play();
-      setIsPlayingVoice(messageId);
-      audioPlayerRef.current.onended = () => {
+      
+      // Add error handling
+      audioPlayerRef.current.onerror = (e) => {
+        console.error('Error playing voice message:', e);
+        console.error('Voice URL:', voiceUrl);
+        alert('Tidak bisa memutar pesan suara. File mungkin tidak tersedia atau URL sudah expired.');
         setIsPlayingVoice(null);
       };
+      
+      audioPlayerRef.current.onplay = () => {
+        console.log('Voice message playing');
+      };
+      
+      audioPlayerRef.current.play();
+      setIsPlayingVoice(messageId);
+      
+      audioPlayerRef.current.onended = () => {
+        console.log('Voice message finished playing');
+        setIsPlayingVoice(null);
+      };
+    } catch (error) {
+      console.error('Error creating audio player:', error);
+      alert('Gagal memutar pesan suara');
+      setIsPlayingVoice(null);
     }
   }
 
