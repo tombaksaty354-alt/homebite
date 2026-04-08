@@ -105,6 +105,8 @@ export default function ChatBox({
   useEffect(() => {
     if (!user?.id || !partnerId) return;
 
+    console.log('Setting up real-time subscription', { userId: user.id, partnerId, orderId });
+
     const channel = supabase!
       .channel('chat-box-messages-ultimate')
       .on(
@@ -113,26 +115,38 @@ export default function ChatBox({
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
+          // Supabase realtime doesn't support complex OR filters
+          // We'll filter client-side instead
           filter: orderId
             ? `order_id.eq.${orderId}`
-            : `or(and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id}))`
+            : undefined // No filter, handle in client
         },
         (payload) => {
           const newMsg = payload.new as Message;
-          setMessages(prev => {
-            // Prevent duplicates
-            if (prev.some(m => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
-          });
+          console.log('Received new message via realtime:', newMsg);
+          
+          // Filter client-side: only show messages between these two users
+          const isRelevantMessage = orderId 
+            ? newMsg.order_id === orderId
+            : (newMsg.sender_id === user.id && newMsg.receiver_id === partnerId) ||
+              (newMsg.sender_id === partnerId && newMsg.receiver_id === user.id);
 
-          if (newMsg.receiver_id === user?.id && !newMsg.dibaca) {
-            supabase!
-              .from('chat_messages')
-              .update({ dibaca: true, read_at: new Date().toISOString() })
-              .eq('id', newMsg.id);
+          if (isRelevantMessage) {
+            setMessages(prev => {
+              // Prevent duplicates
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              return [...prev, newMsg];
+            });
+
+            if (newMsg.receiver_id === user?.id && !newMsg.dibaca) {
+              supabase!
+                .from('chat_messages')
+                .update({ dibaca: true, read_at: new Date().toISOString() })
+                .eq('id', newMsg.id);
+            }
+
+            scrollToBottom();
           }
-
-          scrollToBottom();
         }
       )
       .on(
@@ -234,37 +248,54 @@ export default function ChatBox({
 
   async function fetchMessages() {
     if (!supabase || !user || !partnerId) {
-      console.log('fetchMessages: Missing dependencies', { supabase: !!supabase, user: user?.id, partnerId });
+      console.log('fetchMessages: Missing dependencies', { 
+        supabase: !!supabase, 
+        user: user?.id, 
+        partnerId 
+      });
       return;
     }
 
     try {
+      console.log('Fetching messages between:', user.id, 'and', partnerId, 'orderId:', orderId);
+      
+      // Fetch messages - get all messages where user is involved
       let query = supabase
         .from("chat_messages")
         .select("*")
-        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${partnerId}),and(sender_id.eq.${partnerId},receiver_id.eq.${user.id})`);
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
       if (orderId) {
         query = query.eq("order_id", orderId);
       }
 
-      // Don't filter by chatType here as it might be too restrictive
-      // Only filter by orderId if provided
-
       const { data, error } = await query
         .order("created_at", { ascending: true })
-        .limit(200);
+        .limit(500);
 
       if (error) {
         console.error("Error fetching messages:", error);
+        console.error("Query details:", {
+          userId: user.id,
+          partnerId,
+          orderId
+        });
         return;
       }
 
-      if (data) {
-        console.log('Fetched messages:', data.length);
+      // Filter client-side to only show messages between these two users
+      const filteredData = data?.filter(m => {
+        const isBetweenUsers = (m.sender_id === user.id && m.receiver_id === partnerId) ||
+                            (m.sender_id === partnerId && m.receiver_id === user.id);
+        return isBetweenUsers;
+      }) || [];
+
+      console.log('Fetched messages:', filteredData.length, 'out of', data?.length || 0, 'total');
+
+      if (filteredData.length > 0) {
         
         // Fetch reply messages
-        const replyIds = data.filter(m => m.reply_to_id).map(m => m.reply_to_id);
+        const replyIds = filteredData.filter(m => m.reply_to_id).map(m => m.reply_to_id);
         if (replyIds.length > 0) {
           const { data: replyMessages } = await supabase
             .from("chat_messages")
@@ -288,18 +319,18 @@ export default function ChatBox({
             };
           });
 
-          const messagesWithReplies = data.map(m => ({
+          const messagesWithReplies = filteredData.map(m => ({
             ...m,
             replied_message_preview: m.reply_to_id ? replyMap[m.reply_to_id] : undefined
           }));
 
           setMessages(messagesWithReplies);
         } else {
-          setMessages(data);
+          setMessages(filteredData);
         }
 
         // Mark unread messages as read
-        const unreadIds = data.filter(m => m.receiver_id === user?.id && !m.dibaca).map(m => m.id);
+        const unreadIds = filteredData.filter(m => m.receiver_id === user?.id && !m.dibaca).map(m => m.id);
         if (unreadIds.length > 0) {
           await supabase
             .from("chat_messages")
