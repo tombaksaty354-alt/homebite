@@ -13,6 +13,8 @@ interface Message {
   id: string;
   sender_id: string;
   receiver_id: string;
+  order_id?: string;
+  chat_type?: string;
   pesan: string;
   attachment_url?: string;
   attachment_type?: string;
