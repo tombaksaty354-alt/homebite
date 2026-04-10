@@ -4,6 +4,10 @@
 -- Usage: supabase.rpc('process_payout', { mitra_id: '...', amount: 100000 })
 -- ============================================
 
+-- Drop existing function if exists (to avoid "function name is not unique" error)
+DROP FUNCTION IF EXISTS public.process_payout(UUID, NUMERIC);
+
+-- Create the function
 CREATE OR REPLACE FUNCTION public.process_payout(
   mitra_id UUID,
   amount NUMERIC
