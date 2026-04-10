@@ -192,22 +192,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function checkApprovalStatus(userId: string) {
-    try {
-      if (!supabase) return false;
-      const { data, error } = await supabase
-        .from("users")
-        .select("status")
-        .eq("id", userId)
-        .single();
-
-      if (error || !data) return false;
-      return data.status === "active";
-    } catch (error) {
-      return false;
-    }
-  }
-
   async function logout() {
     if (supabase) {
       await supabase.auth.signOut();

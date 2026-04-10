@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireMitraOrAdmin, requireAuth } from '@/lib/server-auth';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -33,8 +34,8 @@ export async function GET(request: NextRequest) {
     const kategori = searchParams.get('kategori');
     const search = searchParams.get('search');
     const id = searchParams.get('id');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '20')), 100);
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
 
     // Gunakan Service Role Key
     const supabase = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
@@ -68,6 +69,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
+      // Validate search length
+      if (search.length > 200) {
+        return NextResponse.json(
+          { success: false, message: 'Pencarian terlalu panjang' },
+          { status: 400 }
+        );
+      }
       query = query.ilike('nama', `%${search}%`);
     }
 
@@ -80,10 +88,11 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
-    const formattedProduk = rawProduk.map(formatProduk);
-    return NextResponse.json({ 
-      success: true, 
-      produk: formattedProduk, 
+    // Handle null/empty data
+    const formattedProduk = (rawProduk || []).map(formatProduk);
+    return NextResponse.json({
+      success: true,
+      produk: formattedProduk,
       total: count || 0,
       page,
       limit
@@ -92,72 +101,178 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Produk API ERROR:', error);
     return NextResponse.json(
-      { success: false, message: 'Gagal memuat produk: ' + error.message },
+      { success: false, message: 'Gagal memuat produk' },
       { status: 500 }
     );
   }
 }
 
-// POST - Create product
+// POST - Create product (requires mitra or admin auth)
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication
+    const auth = await requireMitraOrAdmin(request);
+    if (auth.response) return auth.response;
+
     const body = await request.json();
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
+
+    // Validate required fields
     if (!body.nama || !body.harga || !body.mitra_id) {
-      return NextResponse.json({ success: false, message: 'Data tidak lengkap' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: 'Data tidak lengkap' },
+        { status: 400 }
+      );
     }
+
+    // Validate data types and ranges
+    if (typeof body.harga !== 'number' || body.harga < 0) {
+      return NextResponse.json(
+        { success: false, message: 'Harga tidak valid' },
+        { status: 400 }
+      );
+    }
+
+    if (body.stok !== undefined && (typeof body.stok !== 'number' || body.stok < 0)) {
+      return NextResponse.json(
+        { success: false, message: 'Stok tidak valid' },
+        { status: 400 }
+      );
+    }
+
+    // Whitelist allowed fields to prevent mass assignment
+    const allowedFields = ['nama', 'harga', 'deskripsi', 'gambar', 'kategori', 'berat', 'porsi', 'stok', 'tersedia', 'mitra_id'];
+    const sanitizedBody = Object.fromEntries(
+      Object.entries(body).filter(([key]) => allowedFields.includes(key))
+    );
 
     const { data: produk, error } = await supabase
       .from('produk')
-      .insert(body)
+      .insert(sanitizedBody)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating product:', error);
+      return NextResponse.json(
+        { success: false, message: 'Gagal membuat produk' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json({ success: true, produk });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error('Product creation error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Terjadi kesalahan saat membuat produk' },
+      { status: 500 }
+    );
   }
 }
 
-// PUT - Update product
+// PUT - Update product (requires mitra or admin auth)
 export async function PUT(request: NextRequest) {
   try {
+    // Require authentication
+    const auth = await requireMitraOrAdmin(request);
+    if (auth.response) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    if (!id) throw new Error("ID diperlukan");
+    
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: 'ID produk diperlukan' },
+        { status: 400 }
+      );
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const body = await request.json();
 
+    // Validate ID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return NextResponse.json(
+        { success: false, message: 'ID tidak valid' },
+        { status: 400 }
+      );
+    }
+
+    // Whitelist allowed fields
+    const allowedFields = ['nama', 'harga', 'deskripsi', 'gambar', 'kategori', 'berat', 'porsi', 'stok', 'tersedia'];
+    const sanitizedBody = Object.fromEntries(
+      Object.entries(body).filter(([key]) => allowedFields.includes(key))
+    );
+
     const { data: produk, error } = await supabase
       .from('produk')
-      .update(body)
+      .update(sanitizedBody)
       .eq('id', id)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating product:', error);
+      return NextResponse.json(
+        { success: false, message: 'Gagal mengupdate produk' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json({ success: true, produk });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error('Product update error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Terjadi kesalahan saat mengupdate produk' },
+      { status: 500 }
+    );
   }
 }
 
-// DELETE - Delete product
+// DELETE - Delete product (requires mitra or admin auth)
 export async function DELETE(request: NextRequest) {
   try {
+    // Require authentication
+    const auth = await requireMitraOrAdmin(request);
+    if (auth.response) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    if (!id) throw new Error("ID diperlukan");
+    
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: 'ID produk diperlukan' },
+        { status: 400 }
+      );
+    }
+
+    // Validate ID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return NextResponse.json(
+        { success: false, message: 'ID tidak valid' },
+        { status: 400 }
+      );
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { error } = await supabase.from('produk').delete().eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error deleting product:', error);
+      return NextResponse.json(
+        { success: false, message: 'Gagal menghapus produk' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error('Product deletion error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Terjadi kesalahan saat menghapus produk' },
+      { status: 500 }
+    );
   }
 }

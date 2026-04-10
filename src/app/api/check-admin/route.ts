@@ -11,7 +11,7 @@ export async function GET() {
 
     if (!supabaseUrl || !supabaseAnonKey) {
       console.warn('⚠️ Supabase env vars not configured, assuming admin exists');
-      return NextResponse.json({ hasAdmin: true, adminCount: 1, error: 'Env not configured' });
+      return NextResponse.json({ hasAdmin: true, adminCount: 1 });
     }
 
     const supabase = supabaseServiceKey
@@ -26,8 +26,8 @@ export async function GET() {
 
     if (error) {
       console.error('❌ Error checking admin:', error);
-      // Jika error, asumsikan sudah ada admin untuk keamanan
-      return NextResponse.json({ hasAdmin: true, adminCount: 1, error: error.message });
+      // Return false so setup can proceed
+      return NextResponse.json({ hasAdmin: false, adminCount: 0 });
     }
 
     const hasAdmin = (count || 0) > 0;
@@ -40,7 +40,7 @@ export async function GET() {
 
   } catch (error: any) {
     console.error('❌ Check admin exception:', error);
-    // Jika ada exception, asumsikan sudah ada admin untuk keamanan
-    return NextResponse.json({ hasAdmin: true, adminCount: 1, error: error.message });
+    // Return false on error so setup can proceed
+    return NextResponse.json({ hasAdmin: false, adminCount: 0 });
   }
 }

@@ -10,24 +10,8 @@ import Image from "next/image";
 export default function HalamanKeranjang() {
   const router = useRouter();
   const { keranjang, updateJumlah, getTotalKeranjang, kosongkanKeranjang } = useKeranjang();
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return (
-      <section className="py-5" style={{ background: '#fafafa', minHeight: '100vh' }}>
-        <div className="container text-center">
-          <div className="spinner-border mx-auto" style={{ color: '#e67e22', width: '3rem', height: '3rem' }} role="status" />
-          <p className="mt-3 text-muted">Memuat keranjang...</p>
-        </div>
-      </section>
-    );
-  }
-
+  // Removed fake loading state - cart is synchronously available from context
   if (keranjang.length === 0) {
     return (
       <section className="py-5" style={{ background: '#fafafa', minHeight: '100vh' }}>
@@ -58,7 +42,7 @@ export default function HalamanKeranjang() {
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
           <div>
             <h1 className="fw-bold mb-1">Keranjang Belanja</h1>
-            <p className="text-muted mb-0">{totalItems} item{totalItems > 1 ? 's' : ''} dalam keranjang Anda</p>
+            <p className="text-muted mb-0">{totalItems} item dalam keranjang Anda</p>
           </div>
           <button
             className="btn"

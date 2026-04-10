@@ -37,50 +37,34 @@ export default function ConfirmOrderButton({
   }
 
   async function handleConfirm() {
-    if (!supabase || !user) return;
+    if (!user) return;
 
     setIsConfirming(true);
 
     try {
-      // Optional: Upload customer confirmation photo
-      let photoUrl = null;
-      if (uploadPhoto && supabase) {
-        const fileExt = uploadPhoto.name.split('.').pop();
-        const fileName = `${orderId}-confirm-${Date.now()}.${fileExt}`;
-        const filePath = `customer-confirmations/${user.id}/${fileName}`;
+      // Call secure server-side API for escrow safety
+      const response = await fetch('/api/orders/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          notes,
+        }),
+      });
 
-        const { error: uploadError, data } = await supabase.storage
-          .from('delivery-proofs')
-          .upload(filePath, uploadPhoto);
+      const result = await response.json();
 
-        if (!uploadError && data) {
-          const { data: urlData } = supabase.storage
-            .from('delivery-proofs')
-            .getPublicUrl(filePath);
-          photoUrl = urlData.publicUrl;
-        }
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Gagal mengonfirmasi pesanan');
       }
-
-      // Update order status to 'selesai'
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          status: 'selesai',
-          received_at: new Date().toISOString(),
-          catatan_customer: notes || null,
-          // Removed customer_confirmation_photo - column doesn't exist yet
-        })
-        .eq('id', orderId);
-
-      if (error) throw error;
 
       setShowModal(false);
       onConfirm();
-      alert('✅ Pesanan telah dikonfirmasi! Terima kasih telah berbelanja.');
+      alert('✅ ' + result.message);
 
     } catch (error: any) {
       console.error('Error confirming order:', error);
-      alert('❌ Gagal konfirmasi pesanan: ' + error.message);
+      alert('❌ ' + error.message);
     } finally {
       setIsConfirming(false);
     }

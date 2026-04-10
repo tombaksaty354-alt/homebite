@@ -180,13 +180,13 @@ export default function AdminPaymentApprovalPage() {
 
   async function handleApprove(order: any) {
     if (!supabase) return;
-    
+
     // PREVENT: Cannot approve if already approved/rejected
     if (order.status_bukti !== "menunggu_konfirmasi") {
       alert("⚠️ Pembayaran ini sudah pernah dikonfirmasi sebelumnya!");
       return;
     }
-    
+
     if (!confirm(`Approve pembayaran untuk pesanan ${order.nomor_pesanan}?\n\nPerhatian: Konfirmasi hanya bisa dilakukan 1x dan tidak bisa diubah.`)) return;
 
     setIsApproving(true);
@@ -194,8 +194,9 @@ export default function AdminPaymentApprovalPage() {
     try {
       console.log("🔄 Approving payment for order:", order.id);
       console.log("📋 Current order status:", order.status_bukti);
-      
-      // STEP 1: Update order status
+
+      // STEP 1: Update order status WITH OPTIMISTIC CONCURRENCY CONTROL
+      // Only update if status_bukti is still 'menunggu_konfirmasi' to prevent double approval
       const { data: updateResult, error: updateError } = await supabase
         .from("orders")
         .update({
@@ -204,6 +205,7 @@ export default function AdminPaymentApprovalPage() {
           paid_at: new Date().toISOString(),
         })
         .eq("id", order.id)
+        .eq("status_bukti", "menunggu_konfirmasi") // OPTIMISTIC LOCK - prevent race condition
         .select("id, status_bukti, status, paid_at");
 
       console.log("✅ Update result:", { data: updateResult, error: updateError });
@@ -214,13 +216,10 @@ export default function AdminPaymentApprovalPage() {
       }
 
       if (!updateResult || updateResult.length === 0) {
-        console.warn("⚠️ No rows updated - checking if order exists...");
-        const { data: checkData } = await supabase
-          .from("orders")
-          .select("id, status_bukti")
-          .eq("id", order.id)
-          .single();
-        console.log("🔍 Order current status:", checkData);
+        console.warn("⚠️ No rows updated - order was already processed by another admin");
+        alert("⚠️ Pembayaran ini sudah dikonfirmasi oleh admin lain atau sedang diproses.");
+        fetchOrders(); // Refresh to show latest status
+        return;
       }
 
       // STEP 2: Try to update tracking columns (optional - will fail if columns don't exist)

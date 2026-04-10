@@ -75,7 +75,58 @@ export default function CheckoutPage() {
     }
   }
 
-  async function handleSaveAlamat(e: React.FormEvent) {
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user?.id) {
+      setError("User ID tidak valid. Silakan login ulang.");
+      return;
+    }
+
+    const selectedAddr = alamatList.find(a => a.id === selectedAlamatId);
+    if (!selectedAddr) {
+      setError("Pilih alamat pengiriman terlebih dahulu.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      // Call secure API endpoint
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: keranjang.map(item => ({
+            id: item.id,
+            nama: item.nama,
+            harga: item.harga,
+            jumlah: item.jumlah,
+          })),
+          alamat: selectedAddr,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Gagal membuat pesanan');
+      }
+
+      // Only clear cart after successful order creation
+      kosongkanKeranjang();
+      router.push("/pesanan");
+
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      setError(error.message || "Gagal membuat pesanan");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveAlamat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase || !user) return;
 
@@ -91,89 +142,6 @@ export default function CheckoutPage() {
       fetchAlamat();
     } else {
       alert("Gagal menyimpan alamat: " + error.message);
-    }
-  }
-
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!user?.id) {
-      setError("User ID tidak valid. Silakan login ulang.");
-      return;
-    }
-
-    if (!supabase) {
-      setError("Koneksi database bermasalah.");
-      return;
-    }
-
-    const selectedAddr = alamatList.find(a => a.id === selectedAlamatId);
-    if (!selectedAddr) {
-      setError("Pilih alamat pengiriman terlebih dahulu.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const groupedItems: Record<string, any[]> = {};
-      keranjang.forEach(item => {
-        const mitraId = item.mitraId;
-        if (!mitraId) throw new Error(`Produk "${item.nama}" tidak memiliki informasi mitra`);
-        if (!groupedItems[mitraId]) groupedItems[mitraId] = [];
-        groupedItems[mitraId].push(item);
-      });
-
-      const orderIds: string[] = [];
-
-      for (const mitraId in groupedItems) {
-        const items = groupedItems[mitraId];
-        const subtotal = items.reduce((sum, item) => sum + (item.harga * item.jumlah), 0);
-
-        const { data: order, error: orderError } = await supabase
-          .from("orders")
-          .insert({
-            customer_id: user.id,
-            mitra_id: mitraId,
-            nomor_pesanan: `HB-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-            status: "menunggu_ongkir",
-            subtotal_produk: subtotal,
-            ongkir: 0,
-            total_bayar: subtotal,
-            alamat_lengkap: selectedAddr.alamat,
-            kota: selectedAddr.kota,
-            provinsi: selectedAddr.provinsi,
-            kode_pos: selectedAddr.kode_pos,
-          })
-          .select()
-          .single();
-
-        if (orderError) throw new Error("Gagal membuat pesanan: " + orderError.message);
-        if (!order) throw new Error("Pesanan tidak dibuat");
-
-        orderIds.push(order.id);
-
-        const orderItems = items.map(item => ({
-          order_id: order.id,
-          produk_id: item.id,
-          jumlah: item.jumlah,
-          harga_satuan: item.harga,
-          subtotal: item.harga * item.jumlah,
-        }));
-
-        const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-        if (itemsError) throw new Error("Gagal menyimpan item pesanan: " + itemsError.message);
-      }
-
-      kosongkanKeranjang();
-      router.push("/pesanan");
-
-    } catch (error: any) {
-      console.error("Checkout error:", error);
-      setError(error.message || "Gagal membuat pesanan");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -242,7 +210,7 @@ export default function CheckoutPage() {
             )}
 
             <form onSubmit={handleCheckout}>
-              {/* Alamat Section */}
+              {/* Alamat Section - Removed nested form, using button onClick instead */}
               <div className="card-modern mb-4 p-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                   <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
@@ -262,7 +230,8 @@ export default function CheckoutPage() {
                 {showAlamatForm && (
                   <div className="p-4 mb-4 rounded-3" style={{ background: '#f8f9fa', border: '1px solid #e0e0e0' }}>
                     <h6 className="fw-bold mb-3">Tambah Alamat Baru</h6>
-                    <form onSubmit={handleSaveAlamat}>
+                    {/* Changed from <form> to <div> to prevent nested form issue */}
+                    <div>
                       <div className="row g-3">
                         <div className="col-md-6">
                           <label className="form-label fw-medium small">Label Alamat</label>
@@ -270,7 +239,7 @@ export default function CheckoutPage() {
                         </div>
                         <div className="col-md-6">
                           <label className="form-label fw-medium small">Nomor Telepon</label>
-                          <input type="tel" className="form-control" value={newAlamat.telepon} onChange={(e) => setNewAlamat({...newAlamat, telepon: e.target.value})} placeholder="0812xxxxxxxxx" required style={{ borderRadius: '10px', border: '2px solid #e0e0e0', padding: '10px 16px' }} />
+                          <input type="tel" className="form-control" value={newAlamat.telepon} onChange={(e) => setNewAlamat({...newAlamat, telepon: e.target.value})} placeholder="0812xxxxxxxxx" maxLength={15} required style={{ borderRadius: '10px', border: '2px solid #e0e0e0', padding: '10px 16px' }} />
                         </div>
                         <div className="col-12">
                           <label className="form-label fw-medium small">Alamat Lengkap</label>
@@ -286,18 +255,28 @@ export default function CheckoutPage() {
                         </div>
                         <div className="col-md-4">
                           <label className="form-label fw-medium small">Kode Pos</label>
-                          <input type="text" className="form-control" value={newAlamat.kode_pos} onChange={(e) => setNewAlamat({...newAlamat, kode_pos: e.target.value})} required style={{ borderRadius: '10px', border: '2px solid #e0e0e0', padding: '10px 16px' }} />
+                          <input type="text" className="form-control" value={newAlamat.kode_pos} onChange={(e) => setNewAlamat({...newAlamat, kode_pos: e.target.value})} placeholder="12345" maxLength={5} pattern="\d{5}" required style={{ borderRadius: '10px', border: '2px solid #e0e0e0', padding: '10px 16px' }} />
                         </div>
                       </div>
                       <div className="d-flex gap-2 mt-3">
-                        <button type="submit" className="btn" style={{ background: '#e67e22', color: 'white', borderRadius: '10px', padding: '10px 24px', fontWeight: 600, border: 'none' }}>
+                        <button 
+                          type="button" 
+                          className="btn" 
+                          onClick={handleSaveAlamat}
+                          style={{ background: '#e67e22', color: 'white', borderRadius: '10px', padding: '10px 24px', fontWeight: 600, border: 'none' }}
+                        >
                           Simpan Alamat
                         </button>
-                        <button type="button" className="btn" onClick={() => setShowAlamatForm(false)} style={{ background: '#e0e0e0', color: '#2c3e50', borderRadius: '10px', padding: '10px 24px', fontWeight: 600, border: 'none' }}>
+                        <button 
+                          type="button" 
+                          className="btn" 
+                          onClick={() => setShowAlamatForm(false)} 
+                          style={{ background: '#e0e0e0', color: '#2c3e50', borderRadius: '10px', padding: '10px 24px', fontWeight: 600, border: 'none' }}
+                        >
                           Batal
                         </button>
                       </div>
-                    </form>
+                    </div>
                   </div>
                 )}
 
