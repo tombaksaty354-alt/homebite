@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/server-auth';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-// POST - Create mitra user (admin only)
+// POST - Approve mitra application (transactional: create user + update status)
 export async function POST(request: Request) {
   try {
     // Require admin authentication
@@ -13,12 +13,20 @@ export async function POST(request: Request) {
     if (auth.response) return auth.response;
 
     const body = await request.json();
-    const { email, password, nama, telepon, kota } = body;
+    const { 
+      applicationId,
+      email, 
+      password, 
+      nama, 
+      telepon, 
+      kota,
+      catatan_admin 
+    } = body;
 
     // Validate required fields
-    if (!email || !password || !nama) {
+    if (!applicationId || !email || !password || !nama) {
       return NextResponse.json(
-        { success: false, error: 'Email, password, dan nama wajib diisi' },
+        { success: false, error: 'ID aplikasi, email, password, dan nama wajib diisi' },
         { status: 400 }
       );
     }
@@ -48,7 +56,7 @@ export async function POST(request: Request) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 1. Create User in Auth
+    // STEP 1: Create User in Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -70,7 +78,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. Insert into users table
+    // STEP 2: Insert into users table (with rollback on failure)
     const { error: dbError } = await supabase
       .from('users')
       .insert({
@@ -86,16 +94,43 @@ export async function POST(request: Request) {
 
     if (dbError) {
       console.error('Error inserting user to database:', dbError);
-      // Rollback: delete auth user
+      // TRANSACTIONAL ROLLBACK: delete auth user
       await supabase.auth.admin.deleteUser(authData.user.id);
-      
+
       return NextResponse.json(
         { success: false, error: 'Gagal menyimpan data user' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ success: true });
+    // STEP 3: Update application status (with rollback on failure)
+    const { error: appError } = await supabase
+      .from('calon_mitra_applications')
+      .update({ 
+        status: 'diterima', 
+        catatan_admin: catatan_admin || 'Disetujui Admin',
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', applicationId);
+
+    if (appError) {
+      console.error('Error updating application status:', appError);
+      // TRANSACTIONAL ROLLBACK: delete user and auth
+      await supabase.from('users').delete().eq('id', authData.user.id);
+      await supabase.auth.admin.deleteUser(authData.user.id);
+
+      return NextResponse.json(
+        { success: false, error: 'Gagal mengupdate status aplikasi' },
+        { status: 500 }
+      );
+    }
+
+    // SUCCESS: All steps completed atomically
+    return NextResponse.json({ 
+      success: true,
+      message: 'Mitra berhasil disetujui dan dibuatkan akun',
+      userId: authData.user.id
+    });
 
   } catch (error: any) {
     console.error('Approve mitra error:', error);
@@ -106,29 +141,20 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT - Update application status (admin only)
-export async function PUT(request: Request) {
+// DELETE - Reject mitra application (simpler, no user creation)
+export async function DELETE(request: Request) {
   try {
     // Require admin authentication
     const auth = await requireAdmin(request);
     if (auth.response) return auth.response;
 
     const body = await request.json();
-    const { applicationId, status, catatan_admin } = body;
+    const { applicationId, catatan_admin } = body;
 
     // Validate required fields
     if (!applicationId) {
       return NextResponse.json(
         { success: false, error: 'ID aplikasi diperlukan' },
-        { status: 400 }
-      );
-    }
-
-    // Validate status
-    const allowedStatuses = ['diterima', 'ditolak', 'pending'];
-    if (status && !allowedStatuses.includes(status)) {
-      return NextResponse.json(
-        { success: false, error: 'Status tidak valid' },
         { status: 400 }
       );
     }
@@ -142,25 +168,33 @@ export async function PUT(request: Request) {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Update application status to rejected
     const { error } = await supabase
       .from('calon_mitra_applications')
-      .update({ status, catatan_admin, updated_at: new Date().toISOString() })
+      .update({ 
+        status: 'ditolak', 
+        catatan_admin: catatan_admin || 'Ditolak Admin',
+        updated_at: new Date().toISOString() 
+      })
       .eq('id', applicationId);
 
     if (error) {
-      console.error('Error updating application:', error);
+      console.error('Error rejecting application:', error);
       return NextResponse.json(
-        { success: false, error: 'Gagal mengupdate status aplikasi' },
+        { success: false, error: 'Gagal menolak aplikasi' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      message: 'Aplikasi mitra berhasil ditolak'
+    });
 
   } catch (error: any) {
-    console.error('Update application error:', error);
+    console.error('Reject application error:', error);
     return NextResponse.json(
-      { success: false, error: 'Terjadi kesalahan saat mengupdate status' },
+      { success: false, error: 'Terjadi kesalahan saat menolak aplikasi' },
       { status: 500 }
     );
   }

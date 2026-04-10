@@ -70,36 +70,28 @@ export default function AdminDashboard() {
   async function approveMitra(calon: any) {
     setProcessing(calon.id);
     try {
+      // SINGLE TRANSACTIONAL CALL - creates user + updates application status
       const res = await fetch('/api/admin/approve-mitra', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          applicationId: calon.id,
           email: calon.email,
           password: calon.password || 'Homebite123',
           nama: calon.nama,
           telepon: calon.telepon,
           kota: calon.kota,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      // Update application status via API
-      await fetch('/api/admin/approve-mitra', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          applicationId: calon.id,
-          status: 'diterima',
           catatan_admin: 'Disetujui Admin'
         }),
       });
 
-      alert("✅ Mitra berhasil disetujui!");
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error);
+
+      alert("✅ " + (data.message || "Mitra berhasil disetujui!"));
       fetchMitras();
     } catch (error: any) {
-      alert("Error: " + error.message);
+      alert("❌ Error: " + error.message);
     }
     setProcessing(null);
   }
@@ -107,20 +99,24 @@ export default function AdminDashboard() {
   async function rejectMitra(id: string) {
     if (!confirm("Tolak pendaftaran ini?")) return;
     setProcessing(id);
-    
-    const updateRes = await fetch('/api/admin/approve-mitra', {
-      method: 'PUT',
+
+    // Use DELETE endpoint for rejection
+    const res = await fetch('/api/admin/approve-mitra', {
+      method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         applicationId: id,
-        status: 'ditolak'
+        catatan_admin: 'Ditolak Admin'
       }),
     });
 
-    if (!updateRes.ok) {
-      alert("Gagal menolak aplikasi");
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      alert("❌ Gagal menolak aplikasi: " + (data.error || "Unknown error"));
+    } else {
+      alert("✅ " + (data.message || "Aplikasi ditolak"));
     }
-    
+
     fetchMitras();
     setProcessing(null);
   }

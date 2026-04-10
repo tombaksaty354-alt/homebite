@@ -20,17 +20,6 @@
       "static/chunks/2972-344948279de80c09.js",
       "static/chunks/app/layout-e436f3316112664d.js"
     ],
-    "/admin/komisi/page": [
-      "static/chunks/webpack-ef76c9eb62ecd37d.js",
-      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
-      "static/chunks/2117-b2b255d5412a294b.js",
-      "static/chunks/main-app-543e7d7c569545e7.js",
-      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
-      "static/chunks/44530001-24192dd685d4d51e.js",
-      "static/chunks/7229-7d673b4e602f5639.js",
-      "static/chunks/2972-344948279de80c09.js",
-      "static/chunks/app/admin/komisi/page-b5352cdcfb9fd0f2.js"
-    ],
     "/admin/chat/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
@@ -43,28 +32,6 @@
       "static/chunks/790-5a9ef42e79698b34.js",
       "static/chunks/app/admin/chat/page-25a832483d30c414.js"
     ],
-    "/admin/payment-approval/page": [
-      "static/chunks/webpack-ef76c9eb62ecd37d.js",
-      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
-      "static/chunks/2117-b2b255d5412a294b.js",
-      "static/chunks/main-app-543e7d7c569545e7.js",
-      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
-      "static/chunks/44530001-24192dd685d4d51e.js",
-      "static/chunks/7229-7d673b4e602f5639.js",
-      "static/chunks/2972-344948279de80c09.js",
-      "static/chunks/app/admin/payment-approval/page-be16f48d2d4c1600.js"
-    ],
-    "/admin/platform-rekening/page": [
-      "static/chunks/webpack-ef76c9eb62ecd37d.js",
-      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
-      "static/chunks/2117-b2b255d5412a294b.js",
-      "static/chunks/main-app-543e7d7c569545e7.js",
-      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
-      "static/chunks/44530001-24192dd685d4d51e.js",
-      "static/chunks/7229-7d673b4e602f5639.js",
-      "static/chunks/2972-344948279de80c09.js",
-      "static/chunks/app/admin/platform-rekening/page-2d7ae567318a8fd8.js"
-    ],
     "/admin/pengaturan/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
@@ -76,6 +43,17 @@
       "static/chunks/2972-344948279de80c09.js",
       "static/chunks/app/admin/pengaturan/page-748d0f37a660d103.js"
     ],
+    "/admin/komisi/page": [
+      "static/chunks/webpack-ef76c9eb62ecd37d.js",
+      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
+      "static/chunks/2117-b2b255d5412a294b.js",
+      "static/chunks/main-app-543e7d7c569545e7.js",
+      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
+      "static/chunks/44530001-24192dd685d4d51e.js",
+      "static/chunks/7229-7d673b4e602f5639.js",
+      "static/chunks/2972-344948279de80c09.js",
+      "static/chunks/app/admin/komisi/page-b5352cdcfb9fd0f2.js"
+    ],
     "/admin/payout/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
@@ -86,6 +64,41 @@
       "static/chunks/7229-7d673b4e602f5639.js",
       "static/chunks/2972-344948279de80c09.js",
       "static/chunks/app/admin/payout/page-c74717f0922522fd.js"
+    ],
+    "/admin/payment-approval/page": [
+      "static/chunks/webpack-ef76c9eb62ecd37d.js",
+      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
+      "static/chunks/2117-b2b255d5412a294b.js",
+      "static/chunks/main-app-543e7d7c569545e7.js",
+      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
+      "static/chunks/44530001-24192dd685d4d51e.js",
+      "static/chunks/7229-7d673b4e602f5639.js",
+      "static/chunks/2972-344948279de80c09.js",
+      "static/chunks/app/admin/payment-approval/page-be16f48d2d4c1600.js"
+    ],
+    "/admin/page": [
+      "static/chunks/webpack-ef76c9eb62ecd37d.js",
+      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
+      "static/chunks/2117-b2b255d5412a294b.js",
+      "static/chunks/main-app-543e7d7c569545e7.js",
+      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
+      "static/chunks/44530001-24192dd685d4d51e.js",
+      "static/chunks/5f4842b5-21c34ba4d71d1156.js",
+      "static/chunks/7229-7d673b4e602f5639.js",
+      "static/chunks/2972-344948279de80c09.js",
+      "static/chunks/1701-2552de5ebe86e984.js",
+      "static/chunks/app/admin/page-6f3f342cca5b8465.js"
+    ],
+    "/admin/platform-rekening/page": [
+      "static/chunks/webpack-ef76c9eb62ecd37d.js",
+      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
+      "static/chunks/2117-b2b255d5412a294b.js",
+      "static/chunks/main-app-543e7d7c569545e7.js",
+      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
+      "static/chunks/44530001-24192dd685d4d51e.js",
+      "static/chunks/7229-7d673b4e602f5639.js",
+      "static/chunks/2972-344948279de80c09.js",
+      "static/chunks/app/admin/platform-rekening/page-2d7ae567318a8fd8.js"
     ],
     "/admin/tagihan/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
@@ -108,19 +121,6 @@
       "static/chunks/7229-7d673b4e602f5639.js",
       "static/chunks/2972-344948279de80c09.js",
       "static/chunks/app/admin/refund/page-57dc3cbb77406a1e.js"
-    ],
-    "/admin/page": [
-      "static/chunks/webpack-ef76c9eb62ecd37d.js",
-      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
-      "static/chunks/2117-b2b255d5412a294b.js",
-      "static/chunks/main-app-543e7d7c569545e7.js",
-      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
-      "static/chunks/44530001-24192dd685d4d51e.js",
-      "static/chunks/5f4842b5-21c34ba4d71d1156.js",
-      "static/chunks/7229-7d673b4e602f5639.js",
-      "static/chunks/2972-344948279de80c09.js",
-      "static/chunks/1701-2552de5ebe86e984.js",
-      "static/chunks/app/admin/page-016a949abfd2d96a.js"
     ],
     "/alamat/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
@@ -178,6 +178,14 @@
       "static/chunks/3145-f4ef767c99133e6c.js",
       "static/chunks/app/checkout/page-f9afa970ccc6f961.js"
     ],
+    "/faq/page": [
+      "static/chunks/webpack-ef76c9eb62ecd37d.js",
+      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
+      "static/chunks/2117-b2b255d5412a294b.js",
+      "static/chunks/main-app-543e7d7c569545e7.js",
+      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
+      "static/chunks/app/faq/page-9705677d877fabe5.js"
+    ],
     "/customer-rekening/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
@@ -189,13 +197,12 @@
       "static/chunks/2972-344948279de80c09.js",
       "static/chunks/app/customer-rekening/page-a9fbc95d7d5ddfc9.js"
     ],
-    "/faq/page": [
+    "/kebijakan-privasi/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
       "static/chunks/2117-b2b255d5412a294b.js",
       "static/chunks/main-app-543e7d7c569545e7.js",
-      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
-      "static/chunks/app/faq/page-9705677d877fabe5.js"
+      "static/chunks/app/kebijakan-privasi/page-53dfe527b3d3d505.js"
     ],
     "/keranjang/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
@@ -218,12 +225,15 @@
       "static/chunks/2972-344948279de80c09.js",
       "static/chunks/app/login/page-d22fe880f3dafea2.js"
     ],
-    "/kebijakan-privasi/page": [
+    "/mitra-dashboard/laporan/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
       "static/chunks/2117-b2b255d5412a294b.js",
       "static/chunks/main-app-543e7d7c569545e7.js",
-      "static/chunks/app/kebijakan-privasi/page-53dfe527b3d3d505.js"
+      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
+      "static/chunks/44530001-24192dd685d4d51e.js",
+      "static/chunks/7229-7d673b4e602f5639.js",
+      "static/chunks/app/mitra-dashboard/laporan/page-ec7f8cc58cc4c8d6.js"
     ],
     "/mitra-dashboard/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
@@ -247,16 +257,6 @@
       "static/chunks/2972-344948279de80c09.js",
       "static/chunks/app/mitra-dashboard/pencairan/page-926ddabe035a5b5b.js"
     ],
-    "/mitra-dashboard/laporan/page": [
-      "static/chunks/webpack-ef76c9eb62ecd37d.js",
-      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
-      "static/chunks/2117-b2b255d5412a294b.js",
-      "static/chunks/main-app-543e7d7c569545e7.js",
-      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
-      "static/chunks/44530001-24192dd685d4d51e.js",
-      "static/chunks/7229-7d673b4e602f5639.js",
-      "static/chunks/app/mitra-dashboard/laporan/page-ec7f8cc58cc4c8d6.js"
-    ],
     "/mitra-dashboard/pengaturan/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
@@ -266,17 +266,6 @@
       "static/chunks/44530001-24192dd685d4d51e.js",
       "static/chunks/7229-7d673b4e602f5639.js",
       "static/chunks/app/mitra-dashboard/pengaturan/page-260d957b4405e042.js"
-    ],
-    "/mitra-dashboard/tagihan/page": [
-      "static/chunks/webpack-ef76c9eb62ecd37d.js",
-      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
-      "static/chunks/2117-b2b255d5412a294b.js",
-      "static/chunks/main-app-543e7d7c569545e7.js",
-      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
-      "static/chunks/44530001-24192dd685d4d51e.js",
-      "static/chunks/7229-7d673b4e602f5639.js",
-      "static/chunks/2972-344948279de80c09.js",
-      "static/chunks/app/mitra-dashboard/tagihan/page-4d157d8e6b6ea641.js"
     ],
     "/mitra-dashboard/pesanan/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
@@ -289,6 +278,27 @@
       "static/chunks/2972-344948279de80c09.js",
       "static/chunks/app/mitra-dashboard/pesanan/page-4cb8d2e164401cef.js"
     ],
+    "/mitra-dashboard/produk/page": [
+      "static/chunks/webpack-ef76c9eb62ecd37d.js",
+      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
+      "static/chunks/2117-b2b255d5412a294b.js",
+      "static/chunks/main-app-543e7d7c569545e7.js",
+      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
+      "static/chunks/44530001-24192dd685d4d51e.js",
+      "static/chunks/7229-7d673b4e602f5639.js",
+      "static/chunks/app/mitra-dashboard/produk/page-16718cfbe86c940e.js"
+    ],
+    "/mitra-dashboard/tagihan/page": [
+      "static/chunks/webpack-ef76c9eb62ecd37d.js",
+      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
+      "static/chunks/2117-b2b255d5412a294b.js",
+      "static/chunks/main-app-543e7d7c569545e7.js",
+      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
+      "static/chunks/44530001-24192dd685d4d51e.js",
+      "static/chunks/7229-7d673b4e602f5639.js",
+      "static/chunks/2972-344948279de80c09.js",
+      "static/chunks/app/mitra-dashboard/tagihan/page-4d157d8e6b6ea641.js"
+    ],
     "/mitra/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
@@ -300,7 +310,7 @@
       "static/chunks/7229-7d673b4e602f5639.js",
       "static/chunks/app/mitra/page-07907c00a5660bfe.js"
     ],
-    "/mitra-dashboard/produk/page": [
+    "/notifikasi/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
       "static/chunks/2117-b2b255d5412a294b.js",
@@ -308,7 +318,8 @@
       "static/chunks/8e1d74a4-7502e7dd905cf353.js",
       "static/chunks/44530001-24192dd685d4d51e.js",
       "static/chunks/7229-7d673b4e602f5639.js",
-      "static/chunks/app/mitra-dashboard/produk/page-16718cfbe86c940e.js"
+      "static/chunks/2972-344948279de80c09.js",
+      "static/chunks/app/notifikasi/page-6d33b2624e1947de.js"
     ],
     "/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
@@ -324,17 +335,6 @@
       "static/chunks/5150-af99b5f34aa67f85.js",
       "static/chunks/app/page-af9851b9807af6a5.js"
     ],
-    "/notifikasi/page": [
-      "static/chunks/webpack-ef76c9eb62ecd37d.js",
-      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
-      "static/chunks/2117-b2b255d5412a294b.js",
-      "static/chunks/main-app-543e7d7c569545e7.js",
-      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
-      "static/chunks/44530001-24192dd685d4d51e.js",
-      "static/chunks/7229-7d673b4e602f5639.js",
-      "static/chunks/2972-344948279de80c09.js",
-      "static/chunks/app/notifikasi/page-6d33b2624e1947de.js"
-    ],
     "/pesanan/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
@@ -345,6 +345,20 @@
       "static/chunks/7229-7d673b4e602f5639.js",
       "static/chunks/2972-344948279de80c09.js",
       "static/chunks/app/pesanan/page-82bb810ebfca9181.js"
+    ],
+    "/produk/[id]/page": [
+      "static/chunks/webpack-ef76c9eb62ecd37d.js",
+      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
+      "static/chunks/2117-b2b255d5412a294b.js",
+      "static/chunks/main-app-543e7d7c569545e7.js",
+      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
+      "static/chunks/44530001-24192dd685d4d51e.js",
+      "static/chunks/0e762574-e31d1d9069c8f5e0.js",
+      "static/chunks/7229-7d673b4e602f5639.js",
+      "static/chunks/2972-344948279de80c09.js",
+      "static/chunks/3145-f4ef767c99133e6c.js",
+      "static/chunks/5150-af99b5f34aa67f85.js",
+      "static/chunks/app/produk/[id]/page-4e13a122c37d85ce.js"
     ],
     "/profil/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
@@ -371,19 +385,16 @@
       "static/chunks/5150-af99b5f34aa67f85.js",
       "static/chunks/app/produk/page-a43c8879b7c9d06a.js"
     ],
-    "/produk/[id]/page": [
+    "/register/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
       "static/chunks/fd9d1056-c40fde46d0fdb121.js",
       "static/chunks/2117-b2b255d5412a294b.js",
       "static/chunks/main-app-543e7d7c569545e7.js",
       "static/chunks/8e1d74a4-7502e7dd905cf353.js",
       "static/chunks/44530001-24192dd685d4d51e.js",
-      "static/chunks/0e762574-e31d1d9069c8f5e0.js",
       "static/chunks/7229-7d673b4e602f5639.js",
       "static/chunks/2972-344948279de80c09.js",
-      "static/chunks/3145-f4ef767c99133e6c.js",
-      "static/chunks/5150-af99b5f34aa67f85.js",
-      "static/chunks/app/produk/[id]/page-4e13a122c37d85ce.js"
+      "static/chunks/app/register/page-4992551b09a8e445.js"
     ],
     "/syarat-ketentuan/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
@@ -400,17 +411,6 @@
       "static/chunks/8e1d74a4-7502e7dd905cf353.js",
       "static/chunks/2972-344948279de80c09.js",
       "static/chunks/app/tentang/page-70d28c9489c1967a.js"
-    ],
-    "/register/page": [
-      "static/chunks/webpack-ef76c9eb62ecd37d.js",
-      "static/chunks/fd9d1056-c40fde46d0fdb121.js",
-      "static/chunks/2117-b2b255d5412a294b.js",
-      "static/chunks/main-app-543e7d7c569545e7.js",
-      "static/chunks/8e1d74a4-7502e7dd905cf353.js",
-      "static/chunks/44530001-24192dd685d4d51e.js",
-      "static/chunks/7229-7d673b4e602f5639.js",
-      "static/chunks/2972-344948279de80c09.js",
-      "static/chunks/app/register/page-4992551b09a8e445.js"
     ],
     "/tidak-ditemukan/page": [
       "static/chunks/webpack-ef76c9eb62ecd37d.js",
