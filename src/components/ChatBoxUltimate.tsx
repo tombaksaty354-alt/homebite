@@ -103,44 +103,49 @@ export default function ChatBox({
     fetchMessages();
   }, [partnerId, orderId]);
 
-  // Real-time subscription for messages
+  // Real-time subscription for messages - OPTIMIZED for instant delivery
   useEffect(() => {
     if (!user?.id || !partnerId) return;
 
     console.log('Setting up real-time subscription', { userId: user.id, partnerId, orderId });
 
+    // Use unique channel name per conversation to avoid conflicts
+    const channelName = orderId 
+      ? `chat-order-${orderId}`
+      : `chat-dm-${[user.id, partnerId].sort().join('-')}`;
+
     const channel = supabase!
-      .channel('chat-box-messages-ultimate')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
-          // Supabase realtime doesn't support complex OR filters
-          // We'll filter client-side instead
           filter: orderId
             ? `order_id.eq.${orderId}`
-            : undefined // No filter, handle in client
+            : undefined
         },
         (payload) => {
           const newMsg = payload.new as Message;
-          console.log('Received new message via realtime:', newMsg);
-          
+          console.log('⚡ Received new message via realtime:', newMsg.id);
+
           // Filter client-side: only show messages between these two users
-          const isRelevantMessage = orderId 
+          const isRelevantMessage = orderId
             ? newMsg.order_id === orderId
             : (newMsg.sender_id === user.id && newMsg.receiver_id === partnerId) ||
               (newMsg.sender_id === partnerId && newMsg.receiver_id === user.id);
 
           if (isRelevantMessage) {
             setMessages(prev => {
-              // Prevent duplicates
+              // Prevent duplicates with immediate check
               if (prev.some(m => m.id === newMsg.id)) return prev;
               return [...prev, newMsg];
             });
 
+            // Mark as read immediately if message is for me
             if (newMsg.receiver_id === user?.id && !newMsg.dibaca) {
+              // Use optimistic update - mark as read without waiting
               supabase!
                 .from('chat_messages')
                 .update({ dibaca: true, read_at: new Date().toISOString() })
@@ -156,21 +161,65 @@ export default function ChatBox({
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'chat_messages'
+          table: 'chat_messages',
+          filter: orderId
+            ? `order_id.eq.${orderId}`
+            : undefined
         },
         (payload) => {
           const updatedMsg = payload.new as Message;
-          setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
+          console.log('📝 Message updated:', updatedMsg.id);
+          
+          setMessages(prev => {
+            const exists = prev.some(m => m.id === updatedMsg.id);
+            if (!exists) return prev;
+            return prev.map(m => m.id === updatedMsg.id ? updatedMsg : m);
+          });
         }
       )
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'DELETE',
+          schema: 'public',
+          table: 'chat_messages'
+        },
+        (payload) => {
+          const deletedMsg = payload.old as Message;
+          console.log('🗑️ Message deleted:', deletedMsg.id);
+          setMessages(prev => prev.filter(m => m.id !== deletedMsg.id));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'message_reactions',
+          filter: `message_id.in.(${messages.map(m => m.id).join(',')})`
+        },
+        (payload) => {
+          const newReaction = payload.new as MessageReaction;
+          console.log('❤️ New reaction:', newReaction);
+          
+          // Optimistically update UI
+          setMessages(prev => prev.map(m => {
+            if (m.id !== newReaction.message_id) return m;
+            const reactions = m.reactions || [];
+            return { ...m, reactions: [...reactions, newReaction] };
+          }));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
           schema: 'public',
           table: 'message_reactions'
         },
         async () => {
+          // For deletions, refetch reactions for affected messages
+          console.log('💔 Reaction removed, refreshing');
           await fetchReactions();
         }
       )
@@ -186,12 +235,19 @@ export default function ChatBox({
           setPartnerTyping((payload.new as any).is_typing);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Real-time subscription active');
+        } else if (status === 'CHANNEL_ERROR' && err) {
+          console.error('❌ Subscription error:', err);
+        }
+      });
 
     return () => {
+      console.log('🔌 Cleaning up real-time subscription');
       supabase!.removeChannel(channel);
     };
-  }, [partnerId, orderId, user?.id]);
+  }, [partnerId, orderId, user?.id, messages.length]); // Add messages.length to refresh filters
 
   // Typing indicator handler
   useEffect(() => {
@@ -478,6 +534,26 @@ export default function ChatBox({
   async function addReaction(messageId: string, emoji: string) {
     if (!supabase || !user) return;
 
+    // Optimistic update - update UI immediately
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      const reactions = m.reactions || [];
+      // Check if user already has this reaction
+      const existingReaction = reactions.find(r => r.reaction === emoji && r.user_id === user.id);
+      if (existingReaction) return m; // Already has this reaction
+      
+      return {
+        ...m,
+        reactions: [...reactions, {
+          id: `temp-${Date.now()}`,
+          message_id: messageId,
+          user_id: user.id,
+          reaction: emoji,
+          user_name: user.nama
+        }]
+      };
+    }));
+
     try {
       const { error } = await supabase
         .from("message_reactions")
@@ -487,11 +563,15 @@ export default function ChatBox({
           reaction: emoji
         });
 
-      if (!error) {
+      if (error) {
+        console.error("Error adding reaction:", error);
+        // Rollback optimistic update on error
         await fetchReactions();
       }
     } catch (error) {
       console.error("Error adding reaction:", error);
+      // Rollback optimistic update on error
+      await fetchReactions();
     }
 
     setShowReactionsForMessage(null);
@@ -499,6 +579,15 @@ export default function ChatBox({
 
   async function removeReaction(messageId: string, emoji: string) {
     if (!supabase || !user) return;
+
+    // Optimistic update - remove from UI immediately
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      const reactions = (m.reactions || []).filter(
+        r => !(r.reaction === emoji && r.user_id === user.id)
+      );
+      return { ...m, reactions };
+    }));
 
     try {
       const { error } = await supabase
@@ -508,11 +597,15 @@ export default function ChatBox({
         .eq("user_id", user.id)
         .eq("reaction", emoji);
 
-      if (!error) {
+      if (error) {
+        console.error("Error removing reaction:", error);
+        // Rollback optimistic update on error
         await fetchReactions();
       }
     } catch (error) {
       console.error("Error removing reaction:", error);
+      // Rollback optimistic update on error
+      await fetchReactions();
     }
   }
 
@@ -532,21 +625,36 @@ export default function ChatBox({
       newStarredBy = [...starredBy, user.id];
     }
 
+    // Optimistic update - update UI immediately
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      return {
+        ...m,
+        is_starred: newStarredBy.length > 0,
+        starred_by: newStarredBy,
+        starred_at: newStarredBy.length > 0 ? new Date().toISOString() : null
+      };
+    }));
+
     try {
       const { error } = await supabase
         .from("chat_messages")
-        .update({ 
+        .update({
           is_starred: newStarredBy.length > 0,
           starred_by: newStarredBy,
           starred_at: newStarredBy.length > 0 ? new Date().toISOString() : null
         })
         .eq("id", messageId);
 
-      if (!error) {
-        fetchMessages();
+      if (error) {
+        console.error("Error toggling star:", error);
+        // Rollback optimistic update on error
+        await fetchMessages();
       }
     } catch (error) {
       console.error("Error toggling star:", error);
+      // Rollback optimistic update on error
+      await fetchMessages();
     }
 
     setShowMessageMenu(null);
