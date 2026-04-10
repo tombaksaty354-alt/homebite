@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth, supabaseAdmin } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FaArrowLeft, FaFileInvoiceDollar, FaCheck, FaSync, FaEye } from "react-icons/fa";

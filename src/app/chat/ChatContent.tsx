@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth, supabase, supabaseAdmin } from "@/context/AuthContext";
+import { useAuth, supabase } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FaArrowLeft, FaComments, FaUser, FaStore, FaShieldAlt, FaSearch, FaDownload, FaStar } from "react-icons/fa";
@@ -176,7 +176,7 @@ function ChatInner() {
 
       const partnerIds = Object.keys(convMap);
       if (partnerIds.length > 0) {
-        const { data: partners } = await supabaseAdmin
+        const { data: partners } = await supabase
           .from("users")
           .select("id, nama, role")
           .in("id", partnerIds);
@@ -292,7 +292,7 @@ function ChatInner() {
 
     let actualPartnerId = partnerId;
     if (partnerId === "admin-id") {
-      const { data: adminData } = await supabaseAdmin
+      const { data: adminData } = await supabase
         .from("users")
         .select("id")
         .eq("role", "admin")
@@ -312,8 +312,8 @@ function ChatInner() {
       return;
     }
 
-    if (supabaseAdmin) {
-      const { data } = await supabaseAdmin.from("users").select("nama, role").eq("id", actualPartnerId).single();
+    if (supabase) {
+      const { data } = await supabase.from("users").select("nama, role").eq("id", actualPartnerId).single();
       if (data) {
         const newChat = {
           partnerId: actualPartnerId,
