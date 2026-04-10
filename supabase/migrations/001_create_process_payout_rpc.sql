@@ -1,41 +1,14 @@
 -- ============================================
 -- RPC Function: process_payout
 -- Purpose: Process mitra payout/withdrawal atomically
--- Usage: supabase.rpc('process_payout', { mitra_id: '...', amount: 100000 })
+-- Usage: supabase.rpc('process_payout_v2', { mitra_id: '...', amount: 100000 })
+-- ============================================
+-- NOTE: Using process_payout_v2 to avoid conflicts with existing functions
+-- After running this, update the payout page to use 'process_payout_v2'
 -- ============================================
 
--- Find and drop ALL existing versions of process_payout (to handle overloaded functions)
--- Run this manually if needed:
--- SELECT routine_name, routine_type, data_type 
--- FROM information_schema.parameters 
--- WHERE specific_name LIKE '%process_payout%';
-
-DO $$ 
-BEGIN
-  -- Try to drop common signatures
-  BEGIN
-    EXECUTE 'DROP FUNCTION IF EXISTS public.process_payout(UUID, NUMERIC) CASCADE';
-  EXCEPTION WHEN OTHERS THEN NULL;
-  END;
-  
-  BEGIN
-    EXECUTE 'DROP FUNCTION IF EXISTS public.process_payout(UUID, INTEGER) CASCADE';
-  EXCEPTION WHEN OTHERS THEN NULL;
-  END;
-  
-  BEGIN
-    EXECUTE 'DROP FUNCTION IF EXISTS public.process_payout(TEXT, NUMERIC) CASCADE';
-  EXCEPTION WHEN OTHERS THEN NULL;
-  END;
-  
-  BEGIN
-    EXECUTE 'DROP FUNCTION IF EXISTS public.process_payout(TEXT, INTEGER) CASCADE';
-  EXCEPTION WHEN OTHERS THEN NULL;
-  END;
-END $$;
-
--- Create the function
-CREATE OR REPLACE FUNCTION public.process_payout(
+-- Create NEW function with different name to avoid conflicts
+CREATE OR REPLACE FUNCTION public.process_payout_v2(
   mitra_id UUID,
   amount NUMERIC
 )
@@ -125,7 +98,7 @@ END;
 $$;
 
 -- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION public.process_payout(UUID, NUMERIC) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.process_payout(UUID, NUMERIC) TO service_role;
+GRANT EXECUTE ON FUNCTION public.process_payout_v2(UUID, NUMERIC) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.process_payout_v2(UUID, NUMERIC) TO service_role;
 
-COMMENT ON FUNCTION public.process_payout IS 'Process mitra payout atomically - reduces saldo_tersedia and increases total_pencairan';
+COMMENT ON FUNCTION public.process_payout_v2 IS 'Process mitra payout atomically - reduces saldo_tersedia and increases total_pencairan (v2 to avoid name conflicts)';

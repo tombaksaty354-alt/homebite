@@ -197,13 +197,13 @@ export default function AdminPayoutPage() {
       // So we need to move it to 'saldo_tersedia' here.
       const payoutAmount = selectedOrder.total_bayar - (selectedOrder.commission_amount || 0);
 
-      const { error: saldoError } = await supabase.rpc('process_payout', {
-        p_mitra_id: selectedOrder.mitra_id,
-        p_order_ids: [selectedOrder.id]
+      const { error: saldoError } = await supabase.rpc('process_payout_v2', {
+        mitra_id: selectedOrder.mitra_id,
+        amount: payoutAmount
       });
 
       if (saldoError) {
-        console.warn("RPC process_payout failed, trying manual update:", saldoError);
+        console.warn("RPC process_payout_v2 failed, trying manual update:", saldoError);
         // Fallback: Fetch current values, compute, then update
         const { data: currentSaldo } = await supabase
           .from("mitra_saldo")
