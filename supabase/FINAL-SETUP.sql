@@ -11,6 +11,11 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('produk-images', 'produk-images', true)
 ON CONFLICT (id) DO NOTHING;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Gambar produk public read" ON storage.objects;
+DROP POLICY IF EXISTS "User upload gambar" ON storage.objects;
+DROP POLICY IF EXISTS "User delete gambar sendiri" ON storage.objects;
+
 CREATE POLICY "Gambar produk public read" ON storage.objects
   FOR SELECT USING (bucket_id = 'produk-images');
 

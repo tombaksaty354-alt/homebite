@@ -6,10 +6,20 @@
 -- 1. Enable RLS on site_settings table
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 
--- 2. Drop existing policies if they exist
-DROP POLICY IF EXISTS "Allow public read access" ON public.site_settings;
-DROP POLICY IF EXISTS "Allow authenticated users to update" ON public.site_settings;
-DROP POLICY IF EXISTS "Allow inserts for authenticated users" ON public.site_settings;
+-- 2. Drop ALL existing policies (use DO block to catch any errors)
+DO $$ 
+DECLARE
+  pol RECORD;
+BEGIN
+  FOR pol IN 
+    SELECT policyname 
+    FROM pg_policies 
+    WHERE tablename = 'site_settings' AND schemaname = 'public'
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.site_settings', pol.policyname);
+    RAISE NOTICE 'Dropped policy: %', pol.policyname;
+  END LOOP;
+END $$;
 
 -- 3. Create policy for PUBLIC READ (anyone can read - needed for footer)
 CREATE POLICY "Allow public read access"
