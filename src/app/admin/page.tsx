@@ -154,6 +154,7 @@ export default function AdminDashboard() {
               <FaMoneyBillWave className="me-1" /> Konfirmasi Pembayaran
             </Link>
             <Link href="/admin/payout" className="btn btn-outline-success">💸 Pencairan Dana</Link>
+            <Link href="/admin/komisi" className="btn btn-outline-info">💰 Rekap Komisi</Link>
             <Link href="/admin/platform-rekening" className="btn btn-outline-primary">🏦 Rekening Platform</Link>
             <Link href="/admin/refund" className="btn btn-outline-danger">🔄 Refund</Link>
             <Link href="/admin/pengaturan" className="btn btn-outline-dark">⚙️ Pengaturan</Link>

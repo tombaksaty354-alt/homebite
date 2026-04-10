@@ -25,15 +25,14 @@ export default function MitraTagihanPage() {
 
   async function fetchInvoices() {
     if (!user) return;
-    
+
     try {
-      const response = await fetch('/api/admin/invoices?action=invoices');
+      // Use mitra-specific endpoint instead of admin endpoint
+      const response = await fetch('/api/mitra/invoices');
       const result = await response.json();
 
       if (result.success && result.data) {
-        // Filter invoices for this mitra
-        const mitraInvoices = result.data.filter((inv: any) => inv.mitra_id === user.id);
-        setInvoices(mitraInvoices);
+        setInvoices(result.data);
       }
     } catch (error) {
       console.error("Error fetching invoices:", error);
@@ -48,7 +47,8 @@ export default function MitraTagihanPage() {
 
     setIsUploading(true);
     try {
-      const response = await fetch('/api/admin/invoices', {
+      // Use mitra-specific endpoint
+      const response = await fetch('/api/mitra/invoices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -62,12 +62,12 @@ export default function MitraTagihanPage() {
 
       if (!result.success) throw new Error(result.error);
 
-      alert("✅ Bukti pembayaran berhasil dikirim! Tunggu verifikasi admin.");
+      alert("✅ " + result.message);
       setShowUploadModal(false);
       setBuktiBayar("");
       fetchInvoices();
     } catch (error: any) {
-      alert("Gagal mengirim bukti: " + error.message);
+      alert("❌ " + error.message);
     } finally {
       setIsUploading(false);
     }

@@ -28,7 +28,7 @@ export default function HalamanProfil() {
         alamat: user.alamat || "",
         kota: user.kota || "",
         provinsi: user.provinsi || "",
-        kodePos: "",
+        kodePos: (user as any).kode_pos || "",
       });
     }
   }, [user]);
@@ -49,6 +49,7 @@ export default function HalamanProfil() {
           alamat: formData.alamat,
           kota: formData.kota,
           provinsi: formData.provinsi,
+          kode_pos: formData.kodePos,
         })
         .eq("id", user?.id);
 
@@ -158,6 +159,18 @@ export default function HalamanProfil() {
                         value={formData.provinsi}
                         onChange={(e) => setFormData({ ...formData, provinsi: e.target.value })}
                         placeholder="Contoh: Jawa Timur, DKI Jakarta"
+                      />
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold">Kode Pos</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={formData.kodePos}
+                        onChange={(e) => setFormData({ ...formData, kodePos: e.target.value })}
+                        placeholder="Contoh: 60123"
+                        maxLength={5}
+                        pattern="\d{5}"
                       />
                     </div>
                   </div>

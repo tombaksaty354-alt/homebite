@@ -7,7 +7,7 @@ import Link from "next/link";
 import { FaArrowLeft, FaStar, FaComments, FaShoppingBag, FaCreditCard, FaQrcode, FaUpload, FaCheckCircle, FaTimesCircle, FaClock, FaImage, FaCheck } from "react-icons/fa";
 import PaymentProofUpload from "@/components/PaymentProofUpload";
 import PaymentProofViewer from "@/components/PaymentProofViewer";
-// import ConfirmOrderButton from "@/components/ConfirmOrderButton"; // REMOVED
+import ConfirmOrderButton from "@/components/ConfirmOrderButton";
 
 export default function CustomerPesanan() {
   const { user, loading } = useAuth();
@@ -304,7 +304,7 @@ export default function CustomerPesanan() {
                       </button>
                     )}
 
-                    {/* Tombol Terima Pesanan (REMOVED - Customer tidak konfirmasi lagi) */}
+                    {/* Tombol Terima Pesanan - RE-ENABLED */}
                     {order.status === "dikirim" && (
                       <div className="mb-2">
                         {order.bukti_pengiriman_url && (
@@ -322,10 +322,14 @@ export default function CustomerPesanan() {
                             />
                           </div>
                         )}
-                        <div className="alert alert-success small py-2 mb-0">
-                          <strong>🚚 Pesanan sedang dalam pengiriman.</strong><br/>
-                          Admin akan segera memproses pembayaran ke Mitra setelah barang diterima.
-                        </div>
+                        <ConfirmOrderButton
+                          orderId={order.id}
+                          orderNumber={order.nomor_pesanan}
+                          onConfirm={() => {
+                            // Refresh orders after confirmation
+                            fetchOrders();
+                          }}
+                        />
                       </div>
                     )}
 

@@ -90,6 +90,7 @@ export default function Navbar() {
                       <li><Link className="dropdown-item" href="/chat"><FaComments className="me-2" /> Chat Saya</Link></li>
                       <li><Link className="dropdown-item" href="/pesanan">📦 Pesanan Saya</Link></li>
                       <li><Link className="dropdown-item" href="/alamat">📍 Alamat Saya</Link></li>
+                      <li><Link className="dropdown-item" href="/customer-rekening">🏦 Rekening Bank Saya</Link></li>
                     </>
                   )}
                   {user.role === "mitra" && (

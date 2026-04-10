@@ -211,14 +211,6 @@ export default function LaporanKeuangan() {
           </div>
         </div>
 
-        {/* Debug Info */}
-        <div className="alert alert-info small mb-4">
-          <strong>Debug Info:</strong> Pesanan Lunas/Selesai di periode ini: <strong>{ordersData.length}</strong> | 
-          Total Penjualan: <strong>{formatRupiah(totalPenjualan)}</strong>
-          <br />
-          <small>Pastikan Anda sudah pernah melakukan checkout dan mengubah status pesanan menjadi "Lunas" atau "Selesai".</small>
-        </div>
-
         {/* Summary Cards */}
         <div className="row mb-4">
           <div className="col-md-4 mb-3">
