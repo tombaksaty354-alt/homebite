@@ -4,8 +4,35 @@
 -- Usage: supabase.rpc('process_payout', { mitra_id: '...', amount: 100000 })
 -- ============================================
 
--- Drop existing function if exists (to avoid "function name is not unique" error)
-DROP FUNCTION IF EXISTS public.process_payout(UUID, NUMERIC);
+-- Find and drop ALL existing versions of process_payout (to handle overloaded functions)
+-- Run this manually if needed:
+-- SELECT routine_name, routine_type, data_type 
+-- FROM information_schema.parameters 
+-- WHERE specific_name LIKE '%process_payout%';
+
+DO $$ 
+BEGIN
+  -- Try to drop common signatures
+  BEGIN
+    EXECUTE 'DROP FUNCTION IF EXISTS public.process_payout(UUID, NUMERIC) CASCADE';
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+  
+  BEGIN
+    EXECUTE 'DROP FUNCTION IF EXISTS public.process_payout(UUID, INTEGER) CASCADE';
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+  
+  BEGIN
+    EXECUTE 'DROP FUNCTION IF EXISTS public.process_payout(TEXT, NUMERIC) CASCADE';
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+  
+  BEGIN
+    EXECUTE 'DROP FUNCTION IF EXISTS public.process_payout(TEXT, INTEGER) CASCADE';
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+END $$;
 
 -- Create the function
 CREATE OR REPLACE FUNCTION public.process_payout(
