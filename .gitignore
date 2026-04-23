@@ -1,5 +1,33 @@
 node_modules
+
 # Keep environment variables out of version control
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
+# Next.js build output
+.next/
+
+# Vercel
+.vercel/
+
+# Prisma generated
 /src/generated/prisma
+
+# Debug
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Agents/AI config (local only)
+.agents/

@@ -93,10 +93,21 @@ export default function CheckoutPage() {
     setError("");
 
     try {
-      // Call secure API endpoint
+      // Get auth token from Supabase session
+      const { data: { session } } = await supabase!.auth.getSession();
+      if (!session?.access_token) {
+        setError("Sesi login telah berakhir. Silakan login ulang.");
+        router.push("/login");
+        return;
+      }
+
+      // Call secure API endpoint with auth token
       const response = await fetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           items: keranjang.map(item => ({
             id: item.id,

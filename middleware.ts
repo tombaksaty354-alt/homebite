@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Supabase configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { createServerClient } from '@supabase/ssr';
 
 // Routes that don't require authentication
 const publicRoutes = [
@@ -12,6 +8,10 @@ const publicRoutes = [
   '/register',
   '/mitra', // Mitra registration form
   '/produk', // Public product listing
+  '/tentang',
+  '/faq',
+  '/kebijakan-privasi',
+  '/syarat-ketentuan',
   '/api/produk', // Public API
   '/_next', // Next.js assets
   '/favicon.ico',
@@ -41,10 +41,20 @@ const authenticatedRoutes = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Allow static assets and public routes
+  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
+    return NextResponse.next();
+  }
+
   // Check if route is public
   const isPublicRoute = publicRoutes.some(route =>
-    pathname.startsWith(route)
+    pathname === route || pathname.startsWith(route + '/')
   );
+
+  // Allow homepage
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
 
   if (isPublicRoute) {
     return NextResponse.next();
@@ -61,22 +71,46 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Create Supabase client for server-side auth check
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      flowType: 'pkce',
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false,
+  // Create response to pass to Supabase SSR client (for cookie handling)
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
     },
   });
 
-  // Get session from cookies (Supabase uses multiple cookies, we need to extract the auth token)
-  // Supabase stores auth state in cookies, we'll use the API to verify
-  const { data: { session }, error: authError } = await supabase.auth.getSession();
+  // Create Supabase SSR client that properly reads cookies from the request
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          // Update cookies on the request (for downstream server components)
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          // Update cookies on the response (for the browser)
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
 
-  // If no session or auth error, redirect to login
-  if (authError || !session?.user) {
+  // Verify the user's session using getUser() (secure, validates JWT with Supabase)
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  // If no user or auth error, redirect to login
+  if (authError || !user) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
@@ -90,15 +124,14 @@ export async function middleware(request: NextRequest) {
   if (protectedRoute) {
     const allowedRoles = protectedRoute[1];
 
-    // Fetch user role from database (JWT doesn't contain role by default)
+    // Fetch user role from database
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('role, status')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single();
 
     if (userError || !userData) {
-      // User profile not found, redirect to login
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
@@ -106,7 +139,6 @@ export async function middleware(request: NextRequest) {
 
     // Check if user has required role
     if (!allowedRoles.includes(userData.role)) {
-      // Forbidden - user doesn't have required role
       return NextResponse.json(
         { error: 'Forbidden - Insufficient permissions' },
         { status: 403 }
@@ -122,8 +154,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // All checks passed
-  return NextResponse.next();
+  // All checks passed — return response with updated cookies
+  return response;
 }
 
 // Only run middleware on specific paths

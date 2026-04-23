@@ -49,6 +49,10 @@ export default function Navbar() {
           <ul className="navbar-nav me-auto">
             <li className="nav-item"><Link className="nav-link" href="/">Beranda</Link></li>
             <li className="nav-item"><Link className="nav-link" href="/produk">Produk UMKM</Link></li>
+            <li className="nav-item"><Link className="nav-link" href="/tentang">Tentang Kami</Link></li>
+            {!user && (
+              <li className="nav-item"><Link className="nav-link fw-semibold" href="/mitra" style={{ color: "#e67e22" }}>Jadi Mitra</Link></li>
+            )}
             {user && user.role === "admin" && (
               <>
                 <li className="nav-item"><Link className="nav-link" href="/admin"><FaChartLine className="me-1" /> Dashboard</Link></li>

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAuth } from '@/lib/server-auth';
+import { sanitizeOrderPayload } from '@/lib/sanitize';
+import { rateLimit, getClientIp, RATE_LIMITS } from '@/lib/rate-limit';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -28,13 +30,36 @@ async function generateUniqueOrderNumber(supabase: any): Promise<string> {
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting
+    const clientIp = getClientIp(request);
+    const rateLimitResult = rateLimit(`orders:${clientIp}`, RATE_LIMITS.orders.maxRequests, RATE_LIMITS.orders.windowMs);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { success: false, error: 'Terlalu banyak permintaan. Silakan tunggu sebentar.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil((rateLimitResult.retryAfterMs || 60000) / 1000)) },
+        }
+      );
+    }
+
     // Require authentication
     const auth = await requireAuth(request);
     if (auth.response) return auth.response;
 
     const user = auth.user;
     const body = await request.json();
-    const { items, alamat } = body;
+
+    // Sanitize and validate all input data
+    const sanitized = sanitizeOrderPayload(body);
+    if (!sanitized.valid || !sanitized.data) {
+      return NextResponse.json(
+        { success: false, error: sanitized.error || 'Data tidak valid' },
+        { status: 400 }
+      );
+    }
+
+    const { items, alamat } = sanitized.data;
 
     // Validate input
     if (!items || !Array.isArray(items) || items.length === 0) {
