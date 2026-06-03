@@ -31,52 +31,134 @@ export async function GET(request: Request) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const cleanEmail = email.trim().toLowerCase();
+    const status = role === 'mitra' ? 'pending' : 'active';
 
-    console.log(`Creating user: ${email} with role: ${role}`);
+    console.log(`[DEBUG_AUTH] Memproses email: ${cleanEmail}, role: ${role}`);
 
-    // 1. Buat user di Auth (otomatis email_confirm: true agar langsung aktif)
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { nama, role }
-    });
-
-    if (authError) {
-      console.error('Auth creation error:', authError);
-      return NextResponse.json({ success: false, error: authError.message }, { status: 400 });
+    // 1. Cek apakah user sudah ada di auth.users (lewat listUsers)
+    const { data: authUsersList, error: listError } = await supabase.auth.admin.listUsers();
+    if (listError) {
+      console.error('[DEBUG_AUTH] Gagal list users:', listError);
+      return NextResponse.json({ success: false, error: 'Gagal mengecek list user auth: ' + listError.message }, { status: 500 });
     }
 
-    const userId = authData.user?.id;
+    const existingAuthUser = authUsersList?.users?.find(
+      (u) => u.email?.toLowerCase() === cleanEmail
+    );
 
-    // 2. Tambah profil ke tabel public.users
-    const status = role === 'mitra' ? 'pending' : 'active';
-    const { error: dbError } = await supabase
-      .from('users')
-      .insert({
-        id: userId,
-        email,
-        nama,
-        role,
-        status,
-        tier: 'silver'
+    let userId: string;
+
+    if (existingAuthUser) {
+      console.log(`[DEBUG_AUTH] User ditemukan di auth.users. ID: ${existingAuthUser.id}. Mengupdate password...`);
+      userId = existingAuthUser.id;
+
+      // Update password & confirm email jika sudah ada di auth
+      const { error: updateAuthError } = await supabase.auth.admin.updateUserById(userId, {
+        password: password,
+        email_confirm: true,
+        user_metadata: { nama, role }
       });
 
-    if (dbError) {
-      console.error('DB insertion error:', dbError);
-      // Hapus auth user jika database gagal disinkronkan
-      if (userId) {
-        await supabase.auth.admin.deleteUser(userId);
+      if (updateAuthError) {
+        console.error('[DEBUG_AUTH] Gagal update auth user:', updateAuthError);
+        return NextResponse.json({ success: false, error: 'Gagal update password: ' + updateAuthError.message }, { status: 400 });
       }
-      return NextResponse.json({ success: false, error: dbError.message }, { status: 500 });
+    } else {
+      console.log(`[DEBUG_AUTH] User tidak ditemukan di auth.users. Membuat baru...`);
+      // Buat baru di auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: cleanEmail,
+        password: password,
+        email_confirm: true,
+        user_metadata: { nama, role }
+      });
+
+      if (authError) {
+        console.error('[DEBUG_AUTH] Gagal membuat auth user:', authError);
+        return NextResponse.json({ success: false, error: 'Gagal membuat user auth: ' + authError.message }, { status: 400 });
+      }
+
+      userId = authData.user!.id;
+    }
+
+    // 2. Cek apakah email sudah ada di tabel public.users
+    const { data: existingDbUser, error: dbCheckError } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('email', cleanEmail)
+      .maybeSingle();
+
+    if (existingDbUser) {
+      console.log(`[DEBUG_AUTH] Email ${cleanEmail} sudah ada di public.users dengan ID: ${existingDbUser.id}. Mensinkronkan ID...`);
+      
+      // Update ID & data profil yang ada agar cocok dengan auth
+      const { error: updateDbError } = await supabase
+        .from('users')
+        .update({
+          id: userId, // Set ke ID auth baru
+          nama: nama,
+          role: role,
+          status: status
+        })
+        .eq('email', cleanEmail);
+
+      if (updateDbError) {
+        console.warn('[DEBUG_AUTH] Gagal update ID via UPDATE, mencoba hapus-insert...', updateDbError.message);
+        
+        // Jika gagal update ID (misal terikat FK), kita hapus lalu insert baru
+        const { error: deleteError } = await supabase
+          .from('users')
+          .delete()
+          .eq('email', cleanEmail);
+
+        if (deleteError) {
+          console.error('[DEBUG_AUTH] Gagal menghapus user lama:', deleteError);
+          return NextResponse.json({ success: false, error: 'Gagal sinkronisasi data tabel users: ' + deleteError.message }, { status: 500 });
+        }
+
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            email: cleanEmail,
+            nama: nama,
+            role: role,
+            status: status,
+            tier: 'silver'
+          });
+
+        if (insertError) {
+          console.error('[DEBUG_AUTH] Gagal insert setelah delete:', insertError);
+          return NextResponse.json({ success: false, error: 'Gagal memasukkan data profile baru: ' + insertError.message }, { status: 500 });
+        }
+      }
+    } else {
+      console.log(`[DEBUG_AUTH] Email ${cleanEmail} belum ada di public.users. Membuat baru...`);
+      // Masukkan profil baru
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          email: cleanEmail,
+          nama: nama,
+          role: role,
+          status: status,
+          tier: 'silver'
+        });
+
+      if (insertError) {
+        console.error('[DEBUG_AUTH] Gagal insert profile baru:', insertError);
+        return NextResponse.json({ success: false, error: 'Gagal membuat profil database: ' + insertError.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: `User berhasil dibuat dan dikonfirmasi!`,
+      message: `User ${cleanEmail} berhasil dibuat/diperbarui dan dikonfirmasi!`,
       data: {
         id: userId,
-        email,
+        email: cleanEmail,
         nama,
         role,
         status
@@ -84,7 +166,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error: any) {
-    console.error('Unexpected exception:', error);
+    console.error('[DEBUG_AUTH] Unexpected exception:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
