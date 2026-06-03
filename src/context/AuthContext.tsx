@@ -124,14 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        // Provide user-friendly error messages
-        if (error.message.includes("Invalid login credentials")) {
-          return { success: false, error: "Email atau password salah" };
-        }
-        if (error.message.includes("Email not confirmed")) {
-          return { success: false, error: "Email belum dikonfirmasi. Silakan cek inbox email Anda." };
-        }
-        return { success: false, error: error.message || "Login gagal" };
+        console.error("DEBUG LOGIN ERROR:", error);
+        return { success: false, error: `Login gagal: ${error.message} (Status: ${error.status || 400})` };
       }
 
       // Cek approval untuk mitra
