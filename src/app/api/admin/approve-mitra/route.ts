@@ -104,7 +104,10 @@ export async function POST(request: Request) {
     }
 
     // STEP 3: Update application status (with rollback on failure)
-    const { error: appError } = await supabase
+    let appError;
+    
+    // Try full update first
+    const { error: fullUpdateError } = await supabase
       .from('calon_mitra_applications')
       .update({ 
         status: 'diterima', 
@@ -113,6 +116,17 @@ export async function POST(request: Request) {
       })
       .eq('id', applicationId);
 
+    if (fullUpdateError) {
+      console.warn('Full update failed, trying status-only:', fullUpdateError.message);
+      // Fallback: update only status column
+      const { error: statusOnlyError } = await supabase
+        .from('calon_mitra_applications')
+        .update({ status: 'diterima' })
+        .eq('id', applicationId);
+      
+      appError = statusOnlyError;
+    }
+
     if (appError) {
       console.error('Error updating application status:', appError);
       // TRANSACTIONAL ROLLBACK: delete user and auth
@@ -120,7 +134,7 @@ export async function POST(request: Request) {
       await supabase.auth.admin.deleteUser(authData.user.id);
 
       return NextResponse.json(
-        { success: false, error: 'Gagal mengupdate status aplikasi' },
+        { success: false, error: 'Gagal mengupdate status aplikasi: ' + appError.message },
         { status: 500 }
       );
     }

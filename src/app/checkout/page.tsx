@@ -342,7 +342,7 @@ export default function CheckoutPage() {
                   <div>
                     <h6 className="fw-bold mb-2">Pembayaran Aman dengan Escrow</h6>
                     <p className="small mb-0" style={{ opacity: 0.8 }}>
-                      Setelah mitra menentukan ongkir, Anda akan menerima notifikasi untuk melakukan pembayaran ke rekening platform (Escrow).
+                      Setelah admin menentukan ongkir dan jasa website, Anda akan menerima notifikasi untuk melakukan pembayaran ke rekening platform (Escrow).
                       Dana akan ditahan sampai pesanan selesai, memastikan transaksi aman.
                     </p>
                   </div>
@@ -431,7 +431,7 @@ export default function CheckoutPage() {
                     Rp{totalPrice.toLocaleString("id-ID")}
                   </span>
                 </div>
-                <small className="text-muted d-block mt-1">*Ongkir akan dikonfirmasi oleh Mitra</small>
+                <small className="text-muted d-block mt-1">*Ongkir & jasa platform akan ditentukan oleh admin</small>
               </div>
             </div>
           </div>

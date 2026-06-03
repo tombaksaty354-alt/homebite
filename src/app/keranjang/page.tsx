@@ -150,7 +150,7 @@ export default function HalamanKeranjang() {
                     Rp{totalPrice.toLocaleString("id-ID")}
                   </span>
                 </div>
-                <small className="text-muted d-block mt-1">*Ongkir akan dikonfirmasi oleh Mitra</small>
+                <small className="text-muted d-block mt-1">*Ongkir & jasa platform akan ditentukan oleh admin</small>
               </div>
 
               <button
@@ -163,7 +163,7 @@ export default function HalamanKeranjang() {
               </button>
 
               <small className="text-muted d-block text-center">
-                Mitra akan menghubungi Anda untuk konfirmasi ongkir & pembayaran
+                Admin akan menetapkan ongkir & jasa platform setelah Anda memesan sebelum pembayaran dilakukan.
               </small>
             </div>
           </div>

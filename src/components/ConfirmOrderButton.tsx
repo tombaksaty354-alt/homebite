@@ -42,10 +42,15 @@ export default function ConfirmOrderButton({
     setIsConfirming(true);
 
     try {
+      const { data: { session } } = await supabase!.auth.getSession();
+
       // Call secure server-side API for escrow safety
       const response = await fetch('/api/orders/confirm', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
         body: JSON.stringify({
           orderId,
           notes,

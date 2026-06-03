@@ -52,37 +52,33 @@ export default function PaymentProofUpload({
       };
       reader.readAsDataURL(file);
 
-      // Upload to Supabase Storage
+      // Upload via server-side API (bypasses storage RLS)
       const { supabase } = await import("@/context/AuthContext");
       
       if (!supabase) {
         throw new Error("Supabase client tidak tersedia");
       }
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `${userId}/${fileName}`;
+      const { data: { session } } = await supabase.auth.getSession();
 
-      const { error: uploadError, data } = await supabase.storage
-        .from('payment-proofs')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'payment-proofs');
+      formData.append('folder', userId);
 
-      if (uploadError) throw uploadError;
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: formData,
+      });
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(filePath);
-
-      if (!urlData.publicUrl) {
-        throw new Error("Gagal mendapatkan URL file");
-      }
+      const uploadResult = await uploadRes.json();
+      if (!uploadResult.success) throw new Error(uploadResult.error || 'Upload gagal');
 
       // Notify parent
-      onUploadComplete(urlData.publicUrl);
+      onUploadComplete(uploadResult.url);
       
     } catch (error: any) {
       console.error("Error uploading payment proof:", error);

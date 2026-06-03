@@ -70,10 +70,14 @@ export default function AdminDashboard() {
   async function approveMitra(calon: any) {
     setProcessing(calon.id);
     try {
+      const { data: { session } } = await supabase!.auth.getSession();
       // SINGLE TRANSACTIONAL CALL - creates user + updates application status
       const res = await fetch('/api/admin/approve-mitra', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
         body: JSON.stringify({
           applicationId: calon.id,
           email: calon.email,
@@ -100,10 +104,14 @@ export default function AdminDashboard() {
     if (!confirm("Tolak pendaftaran ini?")) return;
     setProcessing(id);
 
+    const { data: { session } } = await supabase!.auth.getSession();
     // Use DELETE endpoint for rejection
     const res = await fetch('/api/admin/approve-mitra', {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.access_token}`,
+      },
       body: JSON.stringify({
         applicationId: id,
         catatan_admin: 'Ditolak Admin'
@@ -142,17 +150,23 @@ export default function AdminDashboard() {
       <div className="container">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2 className="fw-bold">🛡️ Admin Dashboard</h2>
-          <div className="btn-group">
+          <div className="btn-group flex-wrap">
             <button className={`btn ${activeTab === 'approval' ? 'btn-warning' : 'btn-outline-secondary'}`} onClick={() => setActiveTab('approval')}>Persetujuan Mitra</button>
             <button className={`btn ${activeTab === 'orders' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setActiveTab('orders')}>Rekap Pesanan</button>
             <button className={`btn ${activeTab === 'stats' ? 'btn-success' : 'btn-outline-secondary'}`} onClick={() => setActiveTab('stats')}>Statistik</button>
             <Link href="/admin/payment-approval" className="btn btn-outline-warning">
               <FaMoneyBillWave className="me-1" /> Konfirmasi Pembayaran
             </Link>
+            <Link href="/admin/atur-ongkir" className="btn btn-outline-primary">
+              🚚 Atur Ongkir
+            </Link>
             <Link href="/admin/payout" className="btn btn-outline-success">💸 Pencairan Dana</Link>
             <Link href="/admin/komisi" className="btn btn-outline-info">💰 Rekap Komisi</Link>
             <Link href="/admin/platform-rekening" className="btn btn-outline-primary">🏦 Rekening Platform</Link>
             <Link href="/admin/refund" className="btn btn-outline-danger">🔄 Refund</Link>
+            <Link href="/admin/ulasan" className="btn btn-outline-warning">⭐ Kurasi Ulasan</Link>
+            <Link href="/admin/logistik" className="btn btn-outline-info">🚚 Logistik</Link>
+            <Link href="/admin/konflik" className="btn btn-outline-danger">⚖️ Konflik</Link>
             <Link href="/admin/pengaturan" className="btn btn-outline-dark">⚙️ Pengaturan</Link>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useKeranjang } from "@/context/KeranjangContext";
 import { useAuth } from "@/context/AuthContext";
-import { FaShoppingCart, FaStore, FaChartLine, FaUserCircle, FaSignOutAlt, FaSearch, FaCog, FaHeart, FaComments } from "react-icons/fa";
+import { FaShoppingCart, FaStore, FaChartLine, FaUserCircle, FaSignOutAlt, FaSearch, FaCog, FaHeart, FaComments, FaTruck, FaStar, FaExclamationTriangle } from "react-icons/fa";
 import NotificationBell from "@/components/NotificationBell";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -56,6 +56,7 @@ export default function Navbar() {
             {user && user.role === "admin" && (
               <>
                 <li className="nav-item"><Link className="nav-link" href="/admin"><FaChartLine className="me-1" /> Dashboard</Link></li>
+                <li className="nav-item"><Link className="nav-link" href="/admin/logistik"><FaTruck className="me-1" /> Logistik</Link></li>
                 <li className="nav-item"><Link className="nav-link" href="/admin/chat"><FaComments className="me-1" /> Chat</Link></li>
               </>
             )}
@@ -93,6 +94,7 @@ export default function Navbar() {
                       <li><Link className="dropdown-item" href="/wishlist"><FaHeart className="me-2 text-danger" /> Wishlist</Link></li>
                       <li><Link className="dropdown-item" href="/chat"><FaComments className="me-2" /> Chat Saya</Link></li>
                       <li><Link className="dropdown-item" href="/pesanan">📦 Pesanan Saya</Link></li>
+                      <li><Link className="dropdown-item" href="/pelacakan"><FaTruck className="me-2" style={{color: '#e67e22'}} /> Lacak Pesanan</Link></li>
                       <li><Link className="dropdown-item" href="/alamat">📍 Alamat Saya</Link></li>
                       <li><Link className="dropdown-item" href="/customer-rekening">🏦 Rekening Bank Saya</Link></li>
                     </>

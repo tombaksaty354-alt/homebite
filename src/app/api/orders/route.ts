@@ -160,7 +160,7 @@ export async function POST(request: Request) {
           customer_id: user.id,
           mitra_id: mitraId,
           nomor_pesanan: nomorPesanan,
-          status: 'menunggu_pembayaran',
+          status: 'menunggu_ongkir',
           subtotal_produk: subtotal,
           ongkir: 0,
           total_bayar: subtotal,

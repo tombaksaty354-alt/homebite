@@ -3,10 +3,14 @@
 import { useState, useEffect } from "react";
 import { useAuth, supabase } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { FaArrowLeft, FaMoneyBillWave, FaCheck, FaComments, FaClock, FaTruck, FaImage, FaCheckCircle, FaTimesCircle, FaChartLine, FaWallet, FaSearchPlus, FaUpload } from "react-icons/fa";
+import { FaArrowLeft, FaMoneyBillWave, FaCheck, FaComments, FaClock, FaTruck, FaImage, FaCheckCircle, FaTimesCircle, FaChartLine, FaWallet, FaSearchPlus, FaUpload, FaMotorcycle, FaBox, FaQrcode, FaUser, FaPhone } from "react-icons/fa";
 import Link from "next/link";
 import PaymentProofViewer from "@/components/PaymentProofViewer";
 import DeliveryProofUpload from "@/components/DeliveryProofUpload";
+import OrderTimeline from "@/components/OrderTimeline";
+import QRCodeGenerator from "@/components/QRCodeGenerator";
+import RequestPickupModal, { DriverInfo } from "@/components/RequestPickupModal";
+import OjolScreenshotUpload from "@/components/OjolScreenshotUpload";
 
 export default function MitraPesanan() {
   const { user, loading } = useAuth();
@@ -18,6 +22,9 @@ export default function MitraPesanan() {
   const [showProofViewer, setShowProofViewer] = useState(false);
   const [viewingProofUrl, setViewingProofUrl] = useState("");
   const [uploadingDeliveryProof, setUploadingDeliveryProof] = useState<string | null>(null);
+  const [pickupModalOpen, setPickupModalOpen] = useState(false);
+  const [pickupOrder, setPickupOrder] = useState<any>(null);
+  const [uploadingOjolOrder, setUploadingOjolOrder] = useState<any>(null);
 
   useEffect(() => {
     if (!loading) {
@@ -247,82 +254,82 @@ export default function MitraPesanan() {
                           order.status === "menunggu_ongkir" ? "bg-warning text-dark" :
                           order.status === "menunggu_pembayaran" ? "bg-info text-dark" :
                           order.status === "lunas" ? "bg-success" :
+                          order.status === "siap_dikirim" ? "bg-info" :
+                          order.status === "dijemput" ? "bg-primary" :
                           order.status === "dikirim" ? "bg-primary" :
                           order.status === "selesai" ? "bg-secondary" : "bg-danger"
                         }`}>
                           {order.status.replace(/_/g, " ").toUpperCase()}
                         </span>
-                      </div>
+                    </div>
 
-                      {/* 1. INPUT ONGKIR */}
+                    {/* Order Timeline */}
+                    <div className="mb-2">
+                      <OrderTimeline status={order.status} compact />
+                    </div>
+
+                      {/* 1. ONGKIR STATUS BY ADMIN */}
                       {order.status === "menunggu_ongkir" && (
-                        <div className="d-grid gap-2">
-                          <label className="form-label small fw-bold">Input Ongkir (Rp)</label>
-                          <div className="input-group input-group-sm">
-                            <input type="number" className="form-control" value={ongkirInputs[order.id] || ""} onChange={(e) => setOngkirInputs({...ongkirInputs, [order.id]: e.target.value})} placeholder="Cth: 15000" />
-                            <button className="btn btn-success" onClick={() => handleUpdate(order.id, "menunggu_pembayaran", { ongkir: parseInt(ongkirInputs[order.id]), total_bayar: (order.subtotal_produk || 0) + parseInt(ongkirInputs[order.id]) })} disabled={isUpdating === order.id || !ongkirInputs[order.id]}>Kirim</button>
-                          </div>
+                        <div className="alert alert-warning small py-2 mb-2 text-center">
+                          <FaClock className="me-1" /> Menunggu Admin menentukan ongkir & platform fee.
                         </div>
                       )}
 
-                      {/* 2. KONFIRMASI BUKTI BAYAR */}
-                      {order.status_bukti === "menunggu_konfirmasi" && (
+                      {order.status === "menunggu_pembayaran" && (
+                        <div className="alert alert-info small py-2 mb-2 text-center">
+                          <FaClock className="me-1" /> Menunggu pembayaran dari customer.
+                        </div>
+                      )}
+
+                      {/* 2. SHIP ORDER (UPLOAD SS OJOL) */}
+                      {order.status === "lunas" && (
                         <div className="d-grid gap-2 mb-2">
-                          <button className="btn btn-success" onClick={() => handleUpdate(order.id, "lunas", { from_bukti: true })} disabled={isUpdating === order.id}>
-                            <FaCheckCircle className="me-1" /> Setujui & Lunas
-                          </button>
-                          <button className="btn btn-danger" onClick={() => {
-                            const catatan = prompt("Alasan penolakan (opsional):");
-                            handleUpdate(order.id, "", { tolak_bukti: true, catatan: catatan || "" });
-                          }} disabled={isUpdating === order.id}>
-                            <FaTimesCircle className="me-1" /> Tolak Bukti
+                          <button
+                            className="btn btn-primary btn-sm rounded-pill fw-semibold justify-content-center d-flex align-items-center gap-2 py-2 shadow-sm transition hover-up"
+                            onClick={() => setUploadingOjolOrder(order)}
+                          >
+                            <FaMotorcycle size={14} /> Kirim Pesanan (Ojol)
                           </button>
                         </div>
                       )}
 
-                      {/* 3. UPLOAD BUKTI PENGIRIMAN (Setelah Lunas) */}
-                      {order.status === "lunas" && !order.bukti_pengiriman_url && (
-                        <div className="d-grid gap-2 mb-2">
-                          <label className="form-label small fw-bold mb-0">📸 Upload Bukti Pengiriman</label>
-                          <small className="text-muted">Screenshot dari Gojek/Grab/JNE atau foto barang sudah dikirim</small>
-                          <DeliveryProofUpload
-                            orderId={order.id}
-                            onUploadComplete={(url) => handleDeliveryProofUpload(order.id, url)}
-                            userId={user?.id || ""}
-                          />
-                        </div>
-                      )}
-
-                      {/* Show delivery proof if already uploaded */}
-                      {order.bukti_pengiriman_url && order.status === "dikirim" && (
-                        <div className="mb-2">
-                          <label className="form-label small fw-bold">✅ Bukti Pengiriman</label>
+                      {/* Show delivery proof / ojol screenshot if already uploaded */}
+                      {(order.bukti_pengiriman_url || order.screenshot_ojol) && (
+                        <div className="mb-2 mt-2">
+                          <label className="form-label small fw-bold">✅ Bukti Pengiriman Ojol</label>
                           <img
-                            src={order.bukti_pengiriman_url}
+                            src={order.bukti_pengiriman_url || order.screenshot_ojol}
                             alt="Bukti Pengiriman"
-                            className="img-fluid rounded mb-2"
-                            style={{ maxHeight: '200px', cursor: 'pointer' }}
+                            className="img-fluid rounded mb-2 shadow-sm"
+                            style={{ maxHeight: '180px', cursor: 'pointer', objectFit: 'contain', width: '100%' }}
                             onClick={() => {
-                              setViewingProofUrl(order.bukti_pengiriman_url);
+                              setViewingProofUrl(order.bukti_pengiriman_url || order.screenshot_ojol);
                               setShowProofViewer(true);
                             }}
                           />
-                          <div className="alert alert-success small py-1 px-2 mb-0">
-                            <FaCheckCircle className="me-1" /> Pesanan sedang dikirim
-                          </div>
                         </div>
                       )}
 
-                      {/* 4. PROSES SETELAH DIKIRIM */}
+                      {/* Show driver tracking info if available */}
+                      {order.driver_name && (
+                        <div className="mt-2 p-2 bg-light rounded small border border-light mb-2">
+                          <div className="fw-bold text-dark mb-1 small text-uppercase text-muted" style={{ fontSize: '0.75rem' }}>Pelacakan Driver:</div>
+                          <div className="text-dark"><FaUser className="me-1 text-muted" size={10} /> <strong>Driver:</strong> {order.driver_name}</div>
+                          <div className="text-dark"><FaPhone className="me-1 text-muted" size={10} /> <strong>No HP:</strong> {order.driver_phone}</div>
+                          <div className="text-dark"><FaMotorcycle className="me-1 text-muted" size={10} /> <strong>Info:</strong> {order.driver_vehicle} ({order.driver_plate})</div>
+                        </div>
+                      )}
+
+                      {/* 3. PROSES SETELAH DIKIRIM */}
                       {order.status === "dikirim" && (
                         <div className="alert alert-info small py-2 mb-2">
-                          <FaTruck className="me-1" /> Menunggu customer konfirmasi terima
+                          <FaTruck className="me-1" /> Pesanan sedang dikirim. Menunggu customer konfirmasi terima.
                         </div>
                       )}
 
                       {order.status === "selesai" && (
                         <div className="alert alert-success small py-2 mb-2">
-                          <FaCheckCircle className="me-1" /> Pesanan selesai - Dana masuk saldo
+                          <FaCheckCircle className="me-1" /> Pesanan selesai - Dana masuk saldo.
                         </div>
                       )}
 
@@ -344,6 +351,41 @@ export default function MitraPesanan() {
         onClose={() => setShowProofViewer(false)}
         proofUrl={viewingProofUrl}
       />
+
+      {/* Request Pickup Modal */}
+      <RequestPickupModal
+        isOpen={pickupModalOpen}
+        onClose={() => setPickupModalOpen(false)}
+        onConfirm={(driverInfo) => {
+          // API already updated status to 'dijemput', just refresh
+          fetchOrders();
+          setPickupModalOpen(false);
+        }}
+        orderId={pickupOrder?.id || ""}
+        orderNumber={pickupOrder?.nomor_pesanan || ""}
+        pickupAddress={pickupOrder?.alamat_mitra || "Alamat mitra"}
+        deliveryAddress={pickupOrder?.alamat_pengiriman || pickupOrder?.alamat_lengkap || "Alamat customer"}
+        customerName={pickupOrder?.nama_customer || "Customer"}
+      />
+
+      {/* Ojol Screenshot Upload Modal */}
+      {uploadingOjolOrder && (
+        <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 bg-transparent">
+              <OjolScreenshotUpload
+                orderId={uploadingOjolOrder.id}
+                orderNumber={uploadingOjolOrder.nomor_pesanan}
+                onSuccess={() => {
+                  setUploadingOjolOrder(null);
+                  fetchOrders();
+                }}
+                onCancel={() => setUploadingOjolOrder(null)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

@@ -849,20 +849,27 @@ export default function ChatBox({
 
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession();
 
-      const { error: uploadError, data } = await supabase.storage
-        .from('chat-attachments')
-        .upload(filePath, file);
+      // Upload via server-side API (bypasses storage RLS)
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bucket', 'chat-attachments');
+      formData.append('folder', user.id);
 
-      if (uploadError) throw uploadError;
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: formData,
+      });
 
-      const { data: urlData } = supabase.storage
-        .from('chat-attachments')
-        .getPublicUrl(filePath);
+      const uploadResult = await uploadRes.json();
+      if (!uploadResult.success) throw new Error(uploadResult.error || 'Upload gagal');
 
+      const publicUrl = uploadResult.url;
       const attachmentType = file.type.startsWith('image/') ? 'image' : 'file';
 
       await supabase.from("chat_messages").insert({
@@ -871,7 +878,7 @@ export default function ChatBox({
         order_id: orderId || null,
         chat_type: chatType || 'support',
         pesan: newMessage || `📎 ${file.name}`,
-        attachment_url: urlData.publicUrl,
+        attachment_url: publicUrl,
         attachment_type: attachmentType,
         reply_to_id: replyToMessage?.id || null,
         dibaca: false,
@@ -880,9 +887,9 @@ export default function ChatBox({
       if (!newMessage) setNewMessage("");
       setReplyToMessage(null);
       fetchMessages();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
-      alert("Gagal upload file");
+      alert("Gagal upload file: " + (error.message || 'Terjadi kesalahan'));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

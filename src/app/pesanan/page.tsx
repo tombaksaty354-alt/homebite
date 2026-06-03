@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useAuth, supabase } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FaArrowLeft, FaStar, FaComments, FaShoppingBag, FaCreditCard, FaQrcode, FaUpload, FaCheckCircle, FaTimesCircle, FaClock, FaImage, FaCheck } from "react-icons/fa";
+import { FaArrowLeft, FaStar, FaComments, FaShoppingBag, FaCreditCard, FaQrcode, FaUpload, FaCheckCircle, FaTimesCircle, FaClock, FaImage, FaCheck, FaMapMarkerAlt } from "react-icons/fa";
+import OrderTimeline from "@/components/OrderTimeline";
 import PaymentProofUpload from "@/components/PaymentProofUpload";
 import PaymentProofViewer from "@/components/PaymentProofViewer";
 import ConfirmOrderButton from "@/components/ConfirmOrderButton";
@@ -77,39 +78,43 @@ export default function CustomerPesanan() {
   }
 
   async function handleUploadProof() {
-    if (!selectedOrder || !payProofUrl || !supabase) return;
-    if (!selectedRekeningId) {
-      alert("Pilih rekening tujuan terlebih dahulu");
+    if (!supabase) return;
+    if (!selectedOrder) {
+      alert("⚠️ Pesanan tidak valid atau belum dipilih.");
       return;
     }
-
-    // VALIDASI: Bukti transfer WAJIB berupa gambar
+    if (!selectedRekeningId) {
+      alert("⚠️ Silakan pilih rekening tujuan transfer terlebih dahulu.");
+      return;
+    }
     if (!payProofUrl) {
-      alert("⚠️ Bukti transfer WAJIB diupload untuk memproses pembayaran");
+      alert("⚠️ Bukti transfer WAJIB diupload untuk memproses pembayaran. Silakan pilih file dan tunggu hingga proses upload selesai.");
       return;
     }
 
     setIsPaying(true);
     try {
-      // Get selected platform rekening info
       const selectedRek = platformRekeningList.find((r: any) => r.id === selectedRekeningId);
+      const { data: { session } } = await supabase.auth.getSession();
 
-      // FIX: Jangan simpan pembayaran_rekening_id karena foreign key constraint bermasalah
-      // Cukup simpan sebagai text di pembayaran_metode
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          bukti_pembayaran: payProofUrl,
-          status_bukti: "menunggu_konfirmasi",
-          metode_pembayaran: payMethod,
-          pembayaran_metode: selectedRek ? `${selectedRek.bank} - ${selectedRek.nomor}` : payMethod,
-          // Hapus pembayaran_rekening_id untuk menghindari foreign key error
-        })
-        .eq("id", selectedOrder.id);
+      const res = await fetch('/api/orders/payment-proof', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          orderId: selectedOrder.id,
+          buktiPembayaran: payProofUrl,
+          metodePembayaran: payMethod,
+          pembayaranMetode: selectedRek ? `${selectedRek.bank} - ${selectedRek.nomor}` : payMethod,
+        }),
+      });
 
-      if (error) throw error;
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error || 'Gagal mengirim bukti');
 
-      alert("✅ Bukti pembayaran terkirim! Tunggu konfirmasi mitra.");
+      alert("✅ Bukti pembayaran terkirim! Tunggu konfirmasi platform.");
       setPayModal(false);
       fetchOrders();
     } catch (error: any) {
@@ -240,9 +245,42 @@ export default function CustomerPesanan() {
                   <div className="col-md-8">
                     <h5 className="fw-bold mb-1">{order.nomor_pesanan}</h5>
                     <p className="text-muted small mb-2">{new Date(order.created_at).toLocaleString("id-ID")}</p>
-                    <p className="mb-1"><strong>Total:</strong> {formatRupiah(order.total_bayar || order.subtotal_produk)}</p>
                     
-                    {/* Status Bukti Bayar */}
+                    {/* Rincian Biaya */}
+                    <div className="bg-light p-3 rounded-3 small mt-2 mb-3 border border-light" style={{ maxWidth: "320px" }}>
+                      <div className="d-flex justify-content-between mb-1 text-muted">
+                        <span>Subtotal Produk:</span>
+                        <span>{formatRupiah(order.subtotal_produk)}</span>
+                      </div>
+                      {order.ongkir > 0 && (
+                        <div className="d-flex justify-content-between mb-1 text-muted">
+                          <span>Ongkos Kirim:</span>
+                          <span className="text-success fw-medium">{formatRupiah(order.ongkir)}</span>
+                        </div>
+                      )}
+                      {order.jasa_website > 0 && (
+                        <div className="d-flex justify-content-between mb-1 text-muted">
+                          <span>Jasa Platform:</span>
+                          <span>{formatRupiah(order.jasa_website)}</span>
+                        </div>
+                      )}
+                      <div className="d-flex justify-content-between pt-2 mt-2 border-top fw-bold text-dark fs-6">
+                        <span>Total Bayar:</span>
+                        <span style={{ color: "#e67e22" }}>{formatRupiah(order.total_bayar || order.subtotal_produk)}</span>
+                      </div>
+                    </div>
+
+                    {/* Order Timeline */}
+                    <div className="mt-3 mb-2">
+                      <OrderTimeline status={order.status} compact />
+                    </div>
+                    
+                    {/* Status Alerts */}
+                    {order.status === "menunggu_ongkir" && (
+                      <div className="alert alert-warning small mt-2 py-2">
+                        <FaClock className="me-1" /> Menunggu Admin menentukan ongkir & platform fee.
+                      </div>
+                    )}
                     {order.status_bukti === "menunggu_konfirmasi" && (
                       <div className="alert alert-warning small mt-2 py-2">
                         <FaClock className="me-1" /> Menunggu Konfirmasi Platform
@@ -302,6 +340,13 @@ export default function CustomerPesanan() {
                       <button className="btn btn-outline-danger w-100 mt-2" onClick={() => { setSelectedCancelOrder(order); setCancelReason(""); setCancelModal(true); }}>
                         ❌ Batalkan Pesanan
                       </button>
+                    )}
+
+                    {/* Tombol Lacak Pesanan */}
+                    {order.status === "dikirim" && (
+                      <Link href={`/pelacakan?order=${order.id}`} className="btn-action btn-action-info w-100 justify-content-center" style={{ textDecoration: 'none' }}>
+                        <FaMapMarkerAlt size={14} /> Lacak Pesanan
+                      </Link>
                     )}
 
                     {/* Tombol Terima Pesanan - RE-ENABLED */}
@@ -442,7 +487,7 @@ export default function CustomerPesanan() {
                     <button
                       className="btn btn-success"
                       onClick={handleUploadProof}
-                      disabled={isPaying || !payProofUrl || !selectedRekeningId}
+                      disabled={isPaying}
                     >
                       {isPaying ? "Mengirim..." : "Kirim Bukti Bayar"}
                     </button>

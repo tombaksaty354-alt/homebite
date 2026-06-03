@@ -5,6 +5,7 @@ import { useAuth, supabase } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { FaPlus, FaEdit, FaTrash, FaArrowLeft, FaImage, FaUpload } from "react-icons/fa";
 import { uploadImage } from "@/lib/upload";
+import StockToggle from "@/components/StockToggle";
 
 interface Produk {
   id: string;
@@ -162,6 +163,22 @@ export default function MitraProduk() {
     }
   }
 
+  async function handleStockToggle(produkId: string, newState: boolean) {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from("produk")
+      .update({ tersedia: newState })
+      .eq("id", produkId);
+
+    if (!error) {
+      setProdukList((prev) =>
+        prev.map((p) => (p.id === produkId ? { ...p, tersedia: newState } : p))
+      );
+    } else {
+      alert("Gagal mengubah status: " + error.message);
+    }
+  }
+
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) {
@@ -310,10 +327,21 @@ export default function MitraProduk() {
                     </div>
                   )}
                   <div className="card-body">
-                    <h5 className="fw-bold">{p.nama}</h5>
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <h5 className="fw-bold mb-0">{p.nama}</h5>
+                      <StockToggle
+                        isActive={p.tersedia}
+                        onToggle={(state) => handleStockToggle(p.id, state)}
+                      />
+                    </div>
                     <p className="text-muted small mb-2">{p.kategori}</p>
                     <h4 className="fw-bold mb-2" style={{ color: "#e67e22" }}>Rp{p.harga.toLocaleString("id-ID")}</h4>
                     <p className="text-muted small mb-2">Stok: {p.stok}</p>
+                    {!p.tersedia && (
+                      <div className="alert alert-warning py-1 px-2 small mb-2">
+                        ⚠️ Produk ini tidak tampil di katalog
+                      </div>
+                    )}
                     <div className="d-flex gap-2">
                       <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(p)}>
                         <FaEdit className="me-1" /> Edit
